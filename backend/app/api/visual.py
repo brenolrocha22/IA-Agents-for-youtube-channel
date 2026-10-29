@@ -1,14 +1,17 @@
 """Rotas do Visual Hunter: plano visual por roteiro e ações humanas de validação."""
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Literal
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Form, HTTPException, UploadFile
 from pydantic import BaseModel, Field
 
-from ..agents.visual_hunter import metadata_score, prepare_candidate, rank_key, subject_for
-from ..config import output_dir
-from ..models import ResearchSource, Script, ScriptSection, VisualPlan, Workflow, now
+from ..agents.visual_hunter import contact_sheet, metadata_score, prepare_candidate, rank_key, rel, subject_for
+from ..config import get_policy, output_dir
+from ..models import ResearchSource, Script, ScriptSection, VisualCandidate, VisualPlan, Workflow, new_id, now
+from ..production import ffmpeg
+from ..research import licensing
 from ..orchestrator.orchestrator import get_orchestrator
 from ..research.footage import providers
 from ..research.http import ApiBudget
@@ -54,7 +57,7 @@ def plans() -> list[dict]:
 @router.get("/plans/{plan_id}")
 def plan(plan_id: str) -> dict:
     p = _plan(plan_id)
-    return {"plan": p, "coverage": p.coverage()}
+    return {"plan": p, "coverage": p.coverage(), "manual_licenses": licensing.MANUAL_LICENSES}
 
 
 class ValidateIn(BaseModel):
@@ -129,6 +132,68 @@ def search(plan_id: str, index: int, body: SearchIn) -> dict:
     s.candidates += new[:8]
     s.queries = list(dict.fromkeys([*s.queries, body.query]))
     p.log.append(f"Cena {index + 1}: nova busca '{body.query}' → {len(new)} candidatos")
+    return _save(p)
+
+
+VIDEO_EXT = {".mp4", ".mov", ".webm", ".m4v", ".mkv", ".ogv"}
+
+
+@router.post("/plans/{plan_id}/scenes/{index}/upload")
+async def upload(plan_id: str, index: int, file: UploadFile, page_url: str = Form(..., pattern=r"^https?://"),
+                 author: str = Form(..., min_length=2, max_length=120), license: str = Form(...),
+                 title: str = Form("", max_length=150), note: str = Form("", max_length=400), as_shot: bool = Form(False)) -> dict:
+    """Filmagem baixada pelo proprietário (ex.: site do Pexels) com origem e licença declaradas."""
+    p = _plan(plan_id)
+    s = _scene(p, index)
+    if license not in licensing.MANUAL_LICENSES:
+        raise HTTPException(422, f"Licença não aceita. Use: {', '.join(licensing.MANUAL_LICENSES)}")
+    if license == licensing.AUTHOR_PERMISSION and len(note.strip()) < 15:
+        raise HTTPException(422, "Descreva a autorização (quem autorizou, quando, escopo de uso comercial e edição)")
+    ext = Path(file.filename or "").suffix.lower()
+    if ext not in VIDEO_EXT:
+        raise HTTPException(415, f"Formato não suportado ({ext or 'sem extensão'}). Use: {', '.join(sorted(VIDEO_EXT))}")
+    limit = get_policy().limits.max_file_size_mb * 1_000_000
+    cid = new_id("upload")
+    folder = output_dir() / "footage" / p.script_id
+    folder.mkdir(parents=True, exist_ok=True)
+    dest = folder / f"{cid}{ext}"
+    size = 0
+    with open(dest, "wb") as fh:
+        while chunk := await file.read(1 << 20):
+            size += len(chunk)
+            if size > limit:
+                fh.close()
+                dest.unlink(missing_ok=True)
+                raise HTTPException(413, f"Arquivo maior que {limit // 1_000_000} MB")
+            fh.write(chunk)
+    ev = licensing.evaluate(license)
+    provider = "Pexels" if "pexels.com" in page_url else "Pixabay" if "pixabay.com" in page_url else "Envio manual"
+    name = title.strip() or Path(file.filename or cid).stem
+    c = VisualCandidate(
+        id=cid, provider=provider, title=name, description=note, page_url=page_url, file_url=page_url, author=author,
+        license=license, license_url=licensing.STOCK_LICENSES.get(provider.lower(), (None, None))[1],
+        license_status=ev["status"], license_note=(ev["note"] + (f" Observação: {note}" if note else "")).strip(),
+        attribution_required=ev["attribution"], share_alike=ev["share_alike"],
+        credit=licensing.credit_line(name, author, provider, license, page_url), matched_terms=["enviado pelo proprietário"],
+    )
+    try:
+        info = ffmpeg.probe(dest)
+        if not info.get("duration") or not info.get("width"):
+            raise ValueError("arquivo sem vídeo legível")
+        c.duration, c.width, c.height = info["duration"], info["width"], info["height"]
+        prev = folder / f"{cid}_preview.jpg"
+        contact_sheet(dest, prev, c.duration)
+        c.local_path, c.preview_path = rel(dest), rel(prev)
+    except Exception as exc:
+        dest.unlink(missing_ok=True)
+        raise HTTPException(422, f"Vídeo inválido: {exc}")
+    s.candidates.insert(0, c)
+    if as_shot and s.selected_id:
+        s.shots.append({"id": c.id, "start": None})
+    else:
+        s.selected_id, s.clip_start = c.id, None
+    s.validation, s.validated_by = "revisao", None  # confirme nos quadros que a ação aparece
+    p.log.append(f"Cena {index + 1}: filmagem enviada ({provider}, {license}) — {page_url}")
     return _save(p)
 
 

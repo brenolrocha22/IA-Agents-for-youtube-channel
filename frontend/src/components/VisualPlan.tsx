@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Check, Film, RefreshCw, Search, X } from "lucide-react";
+import { Check, Film, RefreshCw, Search, Upload, X } from "lucide-react";
 import { mediaUrl, post, useApi } from "../api";
 import { Async, Badge, Bar, Button, Notice, inputCls } from "./ui";
 
@@ -15,7 +15,45 @@ export interface VScene {
   validation: "pendente" | "revisao" | "validada" | "rejeitada"; validated_by: string | null; validation_method: string | null; note: string;
   adaptation: string | null;
 }
-interface PlanResp { plan: { id: string; subject_en: string; providers: string[]; scenes: VScene[]; log: string[] }; coverage: number }
+interface PlanResp { plan: { id: string; subject_en: string; providers: string[]; scenes: VScene[]; log: string[] }; coverage: number; manual_licenses?: string[] }
+
+const LICENSES = ["Pexels License", "Pixabay Content License", "CC0", "Public domain", "CC BY 4.0", "CC BY 3.0", "CC BY 2.0", "CC BY-SA 4.0", "Autorização do autor"];
+
+/** Filmagem baixada pelo proprietário (ex.: site do Pexels), com origem e licença declaradas. */
+function UploadForm({ planId, index, hasSelected, onDone }: { planId: string; index: number; hasSelected: boolean; onDone: (r: PlanResp) => void }) {
+  const [open, setOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const [license, setLicense] = useState(LICENSES[0]);
+  if (!open) return <Button variant="ghost" onClick={() => setOpen(true)}><Upload className="h-4 w-4" /> Enviar filmagem licenciada</Button>;
+  return (
+    <form className="space-y-2 rounded-lg border border-line p-3" onSubmit={async (e) => {
+      e.preventDefault();
+      setBusy(true);
+      setErr(null);
+      try {
+        onDone(await post<PlanResp>(`/visual/plans/${planId}/scenes/${index}/upload`, new FormData(e.currentTarget)));
+        setOpen(false);
+      } catch (ex) { setErr(ex instanceof Error ? ex.message : String(ex)); }
+      finally { setBusy(false); }
+    }}>
+      <p className="text-xs text-muted">Baixe o vídeo você mesmo no site (ex.: Pexels → Download grátis) e informe a origem. O sistema registra a licença, gera os créditos e mostra os quadros para validação.</p>
+      <input name="file" type="file" accept="video/*" required className="block w-full text-xs" />
+      <input name="page_url" type="url" required placeholder="Link da página do vídeo (ex.: https://www.pexels.com/pt-br/video/...)" className={inputCls} />
+      <div className="grid gap-2 sm:grid-cols-2">
+        <input name="author" required minLength={2} placeholder="Autor/criador" className={inputCls} />
+        <select name="license" value={license} onChange={(e) => setLicense(e.target.value)} className={inputCls}>{LICENSES.map((l) => <option key={l}>{l}</option>)}</select>
+      </div>
+      <input name="title" placeholder="Título (opcional)" className={inputCls} />
+      <textarea name="note" placeholder={license === "Autorização do autor" ? "Obrigatório: quem autorizou, quando, escopo (uso comercial e edição)" : "Observações (opcional)"}
+        required={license === "Autorização do autor"} className={`${inputCls} min-h-14`} />
+      {hasSelected && <label className="flex items-center gap-2 text-xs"><input type="checkbox" name="as_shot" value="true" /> Usar como tomada extra (mantém a filmagem atual e adiciona um corte)</label>}
+      {err && <Notice kind="error">{err}</Notice>}
+      <div className="flex gap-2"><Button type="submit" variant="secondary" disabled={busy}>{busy ? "Enviando…" : "Enviar"}</Button>
+        <Button variant="ghost" onClick={() => setOpen(false)}>Cancelar</Button></div>
+    </form>
+  );
+}
 
 const VAL: Record<string, ["green" | "yellow" | "red" | "gray", string]> = {
   validada: ["green", "validada"], revisao: ["yellow", "aguardando validação visual"], pendente: ["red", "pendente"], rejeitada: ["red", "rejeitada"],
@@ -55,6 +93,7 @@ function SceneCard({ planId, s, onChange }: { planId: string; s: VScene; onChang
             <input className={inputCls} placeholder="Nova busca (inglês), ex.: octopus ink cloud" value={q} onChange={(e) => setQ(e.target.value)} />
             <Button type="submit" variant="ghost" disabled={busy}><Search className="h-4 w-4" /></Button>
           </form>
+          <UploadForm planId={planId} index={s.index} hasSelected={!!sel} onDone={onChange} />
         </div>
         <div className="space-y-2">
           {sel ? (

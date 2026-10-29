@@ -3,6 +3,11 @@ from __future__ import annotations
 
 import re
 
+AUTHOR_PERMISSION = "Autorização do autor"
+# Licenças aceitas no envio manual de filmagens (o proprietário informa a origem).
+MANUAL_LICENSES = ("Pexels License", "Pixabay Content License", "CC0", "Public domain", "CC BY 4.0", "CC BY 3.0", "CC BY 2.0",
+                   "CC BY-SA 4.0", AUTHOR_PERMISSION)
+
 STOCK_LICENSES = {
     "pexels": ("Pexels License", "https://www.pexels.com/license/",
                "Uso comercial e edição permitidos, sem atribuição obrigatória; não vender o material sem alterações, "
@@ -38,6 +43,9 @@ def evaluate(license_name: str | None, restrictions: str = "", usage_terms: str 
                 "note": (note + " CC BY: permitido com atribuição (gerada automaticamente).").strip()}
     if name in ("Pexels License", "Pixabay Content License"):
         return {"status": status, "attribution": False, "share_alike": False, "note": note}
+    if name == AUTHOR_PERMISSION:
+        return {"status": "condicional", "attribution": True, "share_alike": False,
+                "note": "Autorização direta do autor: guarde a prova (e-mail/mensagem) com escopo de uso comercial e edição."}
     return {"status": "rejeitada", "attribution": True, "share_alike": False, "note": f"Licença '{name}' não reconhecida: revisar manualmente."}
 
 
