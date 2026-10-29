@@ -98,10 +98,11 @@ class TrendHunter(Agent):
         n_facts = 4 if ctx.param("format", "short") == "short" else 8
         if not topic:
             raise ValueError("Tema não informado")
-        summ = wm.page_summary(ctx.store, lang, topic, ctx.budget)
-        if not summ or summ.get("type") == "disambiguation":
-            raise ValueError(f"Tema '{topic}' não encontrado (ou ambíguo) na Wikipedia {lang}")
-        text = wm.page_text(ctx.store, lang, topic, ctx.budget)
+        items = [i.strip() for i in (ctx.param("items") or []) if i and i.strip()]
+        if items:
+            return self._research_list(ctx, topic.replace("_", " "), items, lang)
+        summ, resolved = self._summary(ctx, lang, topic)
+        text = wm.page_text(ctx.store, lang, resolved, ctx.budget)
         src = ResearchSource(provider=wm.PROVIDER, title=f"Wikipedia: {summ['title']}", url=summ["url"],
                              license=wm.LICENSE, note="Texto usado como referência factual; atribuição obrigatória.")
         facts_text = pick_facts(wm.sentences(summ["extract"] + " " + text), n_facts)
@@ -109,8 +110,41 @@ class TrendHunter(Agent):
         if not facts:
             raise ValueError("Nenhum fato utilizável encontrado na fonte")
         doc = {
-            "id": f"{lang}:{topic}", "topic": summ["title"], "description": summ.get("description"),
+            "id": f"{lang}:{resolved}", "topic": summ["title"], "description": summ.get("description"),
             "facts": [f.model_dump() for f in facts], "sources": [src.model_dump(mode="json")],
+            "topic_en": wm.english_title(ctx.store, lang, resolved, ctx.budget),
         }
-        ctx.store.cache_set(f"topic_research:{lang}:{topic}", doc, 7 * 24 * 3600)
-        return TaskResult(summary=f"{len(facts)} fatos com fonte para '{summ['title']}'", output={"research": doc})
+        note = f" (tema '{topic.replace('_', ' ')}' resolvido para o artigo '{summ['title']}')" if resolved != topic else ""
+        return TaskResult(summary=f"{len(facts)} fatos com fonte para '{summ['title']}'{note}", output={"research": doc})
+
+    @staticmethod
+    def _summary(ctx: AgentContext, lang: str, topic: str) -> tuple[dict, str]:
+        """Artigo exato; se não existir, busca o artigo mais relevante para o texto livre."""
+        summ = wm.page_summary(ctx.store, lang, topic, ctx.budget)
+        if summ and summ.get("type") != "disambiguation":
+            return summ, topic
+        resolved = wm.resolve_title(ctx.store, lang, topic, ctx.budget)
+        summ = wm.page_summary(ctx.store, lang, resolved, ctx.budget) if resolved else None
+        if not summ or summ.get("type") == "disambiguation":
+            raise ValueError(f"Não encontrei um artigo da Wikipedia ({lang}) para '{topic.replace('_', ' ')}'. "
+                             "Tente um nome mais específico (ex.: 'Ornitorrinco') ou use o formato Lista com os itens.")
+        return summ, resolved
+
+    def _research_list(self, ctx: AgentContext, topic: str, items: list[str], lang: str) -> TaskResult:
+        """Formato Lista/Top N: um fato verificado + nome em inglês (busca de filmagem) por item."""
+        out, sources = [], []
+        for name in items[:10]:
+            ctx.check_cancelled()
+            summ, resolved = self._summary(ctx, lang, name.replace(" ", "_"))
+            text = wm.page_text(ctx.store, lang, resolved, ctx.budget, max_chars=4000)
+            facts = pick_facts(wm.sentences(summ["extract"] + " " + text), 1)
+            if not facts:
+                raise ValueError(f"Nenhum fato utilizável para '{name}'")
+            src = ResearchSource(provider=wm.PROVIDER, title=f"Wikipedia: {summ['title']}", url=summ["url"], license=wm.LICENSE)
+            sources.append(src)
+            out.append({"title": summ["title"], "title_en": wm.english_title(ctx.store, lang, resolved, ctx.budget) or summ["title"],
+                        "description": summ.get("description"), "fact": facts[0], "source_id": src.id})
+        doc = {"id": f"{lang}:list:{topic}", "topic": topic, "description": f"{len(out)} itens", "items": out,
+               "facts": [Fact(text=i["fact"], source_id=i["source_id"]).model_dump() for i in out],
+               "sources": [s.model_dump(mode="json") for s in sources]}
+        return TaskResult(summary=f"Lista '{topic}': {len(out)} itens com fato e fonte", output={"research": doc})

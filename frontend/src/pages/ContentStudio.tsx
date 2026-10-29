@@ -21,6 +21,7 @@ function NewShort({ onCreated }: { onCreated: () => void }) {
   const [topic, setTopic] = useState(params.get("topic") ?? "");
   const [niche, setNiche] = useState("natureza_animais");
   const [tone, setTone] = useState("educativo");
+  const [items, setItems] = useState("");
   const [suggestions, setSuggestions] = useState<{ title: string }[]>([]);
   const [msg, setMsg] = useState<{ kind: "success" | "error"; text: string } | null>(null);
   const [busy, setBusy] = useState(false);
@@ -35,7 +36,8 @@ function NewShort({ onCreated }: { onCreated: () => void }) {
     e.preventDefault();
     setBusy(true);
     try {
-      await post("/videos", { topic, channel_id: channel, niche_id: niche, tone, format: "short", language: "pt" });
+      const list = items.split(/[,;\n]/).map((s) => s.trim()).filter(Boolean);
+      await post("/videos", { topic, channel_id: channel, niche_id: niche, tone, format: "short", language: "pt", items: list });
       setMsg({ kind: "success", text: "Workflow criado: pesquisa → briefing → roteiro → revisão. O roteiro aparece abaixo em instantes e aguarda sua aprovação." });
       onCreated();
     } catch (err) {
@@ -56,7 +58,7 @@ function NewShort({ onCreated }: { onCreated: () => void }) {
         </div>
         <div className="relative md:col-span-2">
           <label className="mb-1 block text-xs text-muted" htmlFor="topic">Tema (artigo da Wikipedia pt)</label>
-          <input id="topic" className={inputCls} value={topic} onChange={(e) => setTopic(e.target.value)} placeholder="Ex.: Polvo, Axolote, Bicho-preguiça" required minLength={2} autoComplete="off" />
+          <input id="topic" className={inputCls} value={topic} onChange={(e) => setTopic(e.target.value)} placeholder="Ex.: Polvo, ou 'animais da Austrália' (texto livre)" required minLength={2} autoComplete="off" />
           {suggestions.length > 0 && !suggestions.some((s) => s.title === topic) && (
             <ul className="absolute z-10 mt-1 w-full rounded-lg border border-line bg-panel-2 text-sm shadow-xl">
               {suggestions.map((s) => <li key={s.title}><button type="button" className="w-full px-3 py-1.5 text-left hover:bg-panel" onClick={() => setTopic(s.title)}>{s.title}</button></li>)}
@@ -72,6 +74,11 @@ function NewShort({ onCreated }: { onCreated: () => void }) {
           <select id="tone" className={inputCls} value={tone} onChange={(e) => setTone(e.target.value)}>
             <option value="educativo">Educativo</option><option value="comico">Cômico</option><option value="criativo">Criativo</option>
           </select>
+        </div>
+        <div className="md:col-span-5">
+          <label className="mb-1 block text-xs text-muted" htmlFor="items">Formato Lista / Top N (opcional): itens separados por vírgula</label>
+          <input id="items" className={inputCls} value={items} onChange={(e) => setItems(e.target.value)}
+            placeholder="Ex.: Ornitorrinco, Canguru, Coala, Vombate, Diabo-da-tasmânia — cada item vira uma cena com fato e filmagem própria" />
         </div>
         <div className="flex items-center gap-3 md:col-span-5">
           <Button type="submit" disabled={busy}><Wand2 className="h-4 w-4" /> {busy ? "Criando…" : "Gerar roteiro"}</Button>

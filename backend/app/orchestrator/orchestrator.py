@@ -26,7 +26,7 @@ class ApprovalBlocked(RuntimeError):
 
 def _video_plan(p: dict[str, Any]) -> list[tuple[str, str, list[str], dict]]:
     """(chave, tipo, dependências, entrada)."""
-    base = {k: p[k] for k in ("topic", "niche_id", "format", "tone", "language", "channel_id") if k in p}
+    base = {k: p[k] for k in ("topic", "niche_id", "format", "tone", "language", "channel_id", "items") if k in p}
     return [
         ("research", "research_topic", [], base),
         ("brief", "build_brief", ["research"], {}),

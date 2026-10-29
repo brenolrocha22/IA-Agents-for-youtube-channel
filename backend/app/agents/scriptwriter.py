@@ -61,7 +61,37 @@ class TemplateScriptProvider:
     def is_configured(self) -> bool:
         return True
 
+    def write_list(self, brief: VideoBrief) -> Script:
+        """Formato Lista/Top N: gancho, uma cena por item (fato verificado + filmagem do próprio item), fechamento."""
+        n, t = len(brief.items), brief.topic
+        sections = [ScriptSection(kind="hook", heading="Gancho", narration=f"{n} {t} que você precisa conhecer.",
+                                  on_screen_text=f"TOP {n}", visual_note="Abertura rápida com o 1º item.",
+                                  visual_subject=brief.items[0]["title_en"])]
+        for k, item in enumerate(brief.items, 1):
+            sections.append(ScriptSection(
+                kind="point", heading=f"{k}. {item['title']}", narration=f"Número {k}: {item['title']}. {_short_fact(item['fact'], 30)}",
+                on_screen_text=f"#{k} {item['title'].upper()}", source_ids=[item["source_id"]],
+                visual_note=f"Filmagem real de {item['title']}.", visual_subject=item["title_en"], visual_query=item["title_en"]))
+        sections.append(ScriptSection(kind="payoff", heading="Fechamento", narration="Qual desses é o seu favorito? Conta nos comentários.",
+                                      on_screen_text="QUAL O SEU FAVORITO?", visual_note="Retoma o item mais impactante.",
+                                      visual_subject=brief.items[0]["title_en"]))
+        for s in sections:
+            s.est_seconds = estimate_seconds(s.narration)
+        names = ", ".join(i["title"] for i in brief.items)
+        src_lines = "\n".join(f"- {s.title}: {s.url} (consultado em {s.collected_at:%Y-%m-%d})" for s in brief.sources)
+        title = f"{n} {t} que você precisa conhecer"
+        return Script(
+            brief_id=brief.id, format=brief.format, language=brief.language, tone=brief.tone, title=title[:100],
+            title_variants=[title[:100], f"Top {n}: {t}", f"{t}: {names}"[:100]],
+            description=f"{title}: {names}.\n\nFontes:\n{src_lines}\n\nTexto de referência: Wikipedia (CC BY-SA 4.0).",
+            hashtags=["#shorts", "#curiosidades", "#animais"], thumbnail_ideas=[f"Capa: 'TOP {n}' + {brief.items[0]['title']}"],
+            sections=sections, sources=brief.sources, loop=False, provider=self.name,
+            est_duration_s=round(sum(s.est_seconds for s in sections) + 0.35 * len(sections), 1),
+        )
+
     def write(self, brief: VideoBrief) -> Script:
+        if brief.items:
+            return self.write_list(brief)
         tone = brief.tone if brief.tone in LOOPS else "educativo"
         t = brief.topic
         rnd = _seed(brief.id + t)
@@ -162,6 +192,7 @@ class Scriptwriter(Agent):
         script = provider.write(brief)
         channel = get_channel(ctx.param("channel_id"), "video")
         script.channel_id = channel["id"]
+        script.topic_en = brief.topic_en
         if script.format == "short":
             script.hashtags = list(dict.fromkeys(channel["hashtags"] + script.hashtags[1:]))
         ctx.save("scripts", script)

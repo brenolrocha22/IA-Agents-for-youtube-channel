@@ -172,6 +172,7 @@ class NicheAnalyst(Agent):
             audience="Público brasileiro geral, 16–40 anos, consumo mobile" if fmt == "short" else "Público brasileiro interessado no tema",
             key_points=[f.text for f in facts[: (3 if fmt == "short" else 6)]],
             facts=facts, sources=[ResearchSource(**s) for s in research["sources"]],
+            topic_en=research.get("topic_en"), items=research.get("items", []),
         )
         ctx.save("briefs", brief)
         return TaskResult(summary=f"Briefing '{brief.topic}' ({fmt}, {tone})", output={"brief_id": brief.id})

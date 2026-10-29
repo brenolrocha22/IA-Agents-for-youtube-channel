@@ -55,6 +55,15 @@ def subject_for(topic: str) -> tuple[str, tuple[str, ...]]:
     return topic.lower(), (topic.lower(),)
 
 
+def scene_synonyms(subject: str) -> tuple[str, ...]:
+    """Assunto da cena (nome em inglês, ex.: 'Platypus', 'Tasmanian devil') → termos aceitos nos metadados."""
+    known = subject_for(subject)
+    if known[0] != subject.lower():
+        return known[1]
+    base = re.sub(r"\s*\(.*?\)", "", subject).lower().strip()
+    return (base,) + ((base.split()[-1],) if " " in base and len(base.split()[-1]) > 4 else ())
+
+
 def infer_action(narration: str) -> str:
     """Ações narradas → grupos exigidos. Várias ações na mesma frase viram alternativas (qualquer uma serve)."""
     low = _norm(narration)
@@ -179,8 +188,11 @@ class VisualHunter(Agent):
 def hunt(script: Script, ctx: AgentContext, max_downloads_per_scene: int = 2) -> VisualPlan:
     subject_en, subject_syn = subject_for(script.topic_en or script.title)
     provs = providers()
-    scenes = [VisualScene(index=i, narration=s.narration, action=s.visual_action or infer_action(s.narration),
-                          queries=queries_for(subject_en, s.visual_action or infer_action(s.narration), s.visual_query))
+    # Formato lista: cada cena tem o próprio assunto (ex.: um animal diferente por cena).
+    scenes = [VisualScene(index=i, narration=s.narration, subject=s.visual_subject,
+                          action=s.visual_action or ("" if s.visual_subject else infer_action(s.narration)),
+                          queries=queries_for(s.visual_subject or subject_en,
+                                              s.visual_action or ("" if s.visual_subject else infer_action(s.narration)), s.visual_query))
               for i, s in enumerate(script.sections)]
     plan = VisualPlan(script_id=script.id, subject_en=subject_en, providers=[p.name for p in provs], scenes=scenes)
 
@@ -203,7 +215,8 @@ def hunt(script: Script, ctx: AgentContext, max_downloads_per_scene: int = 2) ->
         for c in pool.values():
             if c.license_status == "rejeitada":
                 continue
-            score, terms = metadata_score(c, subject_syn, s.action)
+            syn = scene_synonyms(s.subject) if s.subject else subject_syn
+            score, terms = metadata_score(c, syn, s.action)
             if score > 0:
                 ranked.append(c.model_copy(update={"metadata_score": score, "matched_terms": terms}))
         ranked.sort(key=rank_key, reverse=True)

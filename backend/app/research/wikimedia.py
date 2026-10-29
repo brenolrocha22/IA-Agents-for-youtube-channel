@@ -87,6 +87,30 @@ def page_text(store: Store, lang: str, title: str, budget: ApiBudget | None = No
     return text[:max_chars]
 
 
+def resolve_title(store: Store, lang: str, query: str, budget: ApiBudget | None = None) -> str | None:
+    """Tema em texto livre → título de artigo existente (busca de texto completo da Wikipedia)."""
+    url = f"https://{lang}.wikipedia.org/w/api.php"
+    data = get_json(url, store=store, ttl_s=7 * 24 * 3600, budget=budget,
+                    params={"action": "query", "list": "search", "srsearch": query.replace("_", " "), "srlimit": 5,
+                            "format": "json", "formatversion": 2})
+    for hit in data.get("query", {}).get("search", []):
+        if "(desambiguação)" not in hit["title"] and "(disambiguation)" not in hit["title"]:
+            return hit["title"].replace(" ", "_")
+    return None
+
+
+def english_title(store: Store, lang: str, title: str, budget: ApiBudget | None = None) -> str | None:
+    """Título equivalente na Wikipedia em inglês (para buscar filmagens pelo nome em inglês)."""
+    if lang == "en":
+        return title.replace("_", " ")
+    data = get_json(f"https://{lang}.wikipedia.org/w/api.php", store=store, ttl_s=30 * 24 * 3600, budget=budget,
+                    params={"action": "query", "prop": "langlinks", "lllang": "en", "titles": title.replace("_", " "),
+                            "redirects": 1, "format": "json", "formatversion": 2})
+    pages = data.get("query", {}).get("pages", [])
+    links = pages[0].get("langlinks", []) if pages else []
+    return links[0]["title"] if links else None
+
+
 def search_titles(store: Store, lang: str, query: str, limit: int = 8) -> list[dict]:
     url = f"https://{lang}.wikipedia.org/w/api.php"
     params = {"action": "opensearch", "search": query, "limit": limit, "namespace": 0, "format": "json"}

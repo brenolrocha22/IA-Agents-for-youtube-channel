@@ -176,6 +176,7 @@ class VideoIn(BaseModel):
     format: Literal["short", "long"] = "short"
     tone: Literal["comico", "educativo", "criativo"] = "comico"
     language: Literal["pt", "en"] = "pt"
+    items: list[str] = Field(default_factory=list, max_length=10)  # formato Lista/Top N
 
 
 @router.post("/videos")

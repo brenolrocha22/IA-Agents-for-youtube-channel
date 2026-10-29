@@ -192,6 +192,8 @@ class VideoBrief(BaseModel):
     facts: list[Fact]
     sources: list[ResearchSource]
     topic_description: str | None = None
+    topic_en: str | None = None
+    items: list[dict[str, Any]] = Field(default_factory=list)  # formato Lista/Top N
 
 
 class ScriptSection(BaseModel):
@@ -205,6 +207,7 @@ class ScriptSection(BaseModel):
     # Visual First: o que a imagem precisa MOSTRAR nesta cena
     visual_query: str | None = None  # busca em inglês, ex.: "octopus releasing ink"
     visual_action: str | None = None  # grupos exigidos: "+" = todos, "|" = qualquer um (ex.: "color|camouflage")
+    visual_subject: str | None = None  # assunto desta cena em inglês (formato lista: cada cena um animal)
 
 
 class Script(BaseModel):
@@ -267,6 +270,7 @@ class VisualCandidate(BaseModel):
 class VisualScene(BaseModel):
     index: int
     narration: str
+    subject: str | None = None
     action: str  # grupos exigidos (ex.: "ink", "color|camouflage")
     queries: list[str]
     start: float | None = None
