@@ -45,6 +45,25 @@ class YouTubeCompetitionProvider:
         return {"videos": len(views), "channels": channels, "median_views": median(views) if views else None,
                 "window_days": days}
 
+    def public_stats(self, video_ids: list[str]) -> dict[str, dict]:
+        """Estatísticas públicas (visualizações, curtidas, comentários) — 1 unidade de cota por chamada, sem cache."""
+        import httpx
+
+        if not self.is_configured():
+            raise RuntimeError("YOUTUBE_API_KEY ausente: monitoramento automático desativado")
+        r = httpx.get(f"{API}/videos", timeout=20, params={"part": "statistics,snippet", "id": ",".join(video_ids[:50]),
+                                                            "key": env("YOUTUBE_API_KEY")})
+        if r.status_code >= 400:
+            raise RuntimeError(f"YouTube API respondeu {r.status_code}")  # sem ecoar a URL (contém a chave)
+        out = {}
+        for v in r.json().get("items", []):
+            s = v.get("statistics", {})
+            out[v["id"]] = {"views": int(s["viewCount"]) if "viewCount" in s else None,
+                            "likes": int(s["likeCount"]) if "likeCount" in s else None,
+                            "comments": int(s["commentCount"]) if "commentCount" in s else None,
+                            "title": v.get("snippet", {}).get("title"), "published_at": v.get("snippet", {}).get("publishedAt")}
+        return out
+
     @staticmethod
     def opportunity_score(result: dict) -> float | None:
         """Mais visualizações recentes distribuídas entre mais canais = demanda aberta a novos criadores."""

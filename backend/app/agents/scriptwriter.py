@@ -196,6 +196,15 @@ class Scriptwriter(Agent):
         script.topic_en = brief.topic_en
         if script.format == "short":
             script.hashtags = list(dict.fromkeys(channel["hashtags"] + script.hashtags[1:]))
+        # Modo híbrido: revisão de público/storytelling pelo LLM (com travas de veracidade), se configurado.
+        from ..config import get_policy
+        from .llm_review import review_script
+
+        script, review = review_script(script, [f.text for f in brief.facts], get_policy().limits.max_short_duration_s)
+        usage = review.get("usage", {})
+        ctx.log(f"Revisão LLM: {review.get('reason')} {review.get('notes', '')}".strip())
         ctx.save("scripts", script)
-        return TaskResult(summary=f"Roteiro '{script.title}' (~{script.est_duration_s:.0f}s, {provider.name})",
-                          output={"script_id": script.id})
+        return TaskResult(summary=f"Roteiro '{script.title}' (~{script.est_duration_s:.0f}s, {script.provider}); "
+                                  f"revisão LLM: {review.get('reason')}",
+                          output={"script_id": script.id, "llm_review": review},
+                          tokens_estimated=usage.get("total_tokens", 0), cost_estimated_usd=usage.get("cost_usd", 0.0))

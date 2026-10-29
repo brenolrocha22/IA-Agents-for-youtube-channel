@@ -1,13 +1,67 @@
 import { useState, type ChangeEvent } from "react";
 import { Upload } from "lucide-react";
-import { fmtNum, post, useApi } from "../api";
-import { Async, Bar, Card, Empty, Notice, PageHeader, Stat } from "../components/ui";
+import { fmtDate, fmtNum, post, useApi } from "../api";
+import { Async, Bar, Button, Card, Empty, Notice, PageHeader, Stat, inputCls } from "../components/ui";
 
 interface Group { group: string; n: number; views_avg: number | null; ctr_avg: number | null; avg_view_pct: number | null; subs_avg: number | null; sample_ok: boolean }
 interface Report { demo: boolean; records: number; totals: Record<string, number | null>; comparisons: Record<string, Group[]>; recommendations: string[]; limitations: string[] }
 
 const COMP: Record<string, string> = { format: "Shorts × vídeos longos", hook: "Ganchos", theme: "Temas", duration_s: "Durações" };
 const TOTALS: [string, string][] = [["views", "Visualizações"], ["impressions", "Impressões"], ["watch_time_h", "Tempo de exibição (h)"], ["subs_gained", "Inscritos"], ["revenue_usd", "Receita (US$)"]];
+
+interface Published { id: string; url: string; title: string; registered_at: string; published_at: string | null; last_error: string | null;
+  snapshots: { ts: string; views: number | null; likes: number | null; comments: number | null }[] }
+
+function PublishedVideos() {
+  const q = useApi<Published[]>("/analytics/published", 30000);
+  const [url, setUrl] = useState("");
+  const [msg, setMsg] = useState<{ kind: "success" | "error" | "warn"; text: string } | null>(null);
+  const run = async (fn: () => Promise<{ refresh?: { reason: string }; reason?: string }>) => {
+    try {
+      const r = await fn();
+      const reason = r.refresh?.reason ?? r.reason;
+      setMsg(reason === "ok" ? { kind: "success", text: "Dados atualizados." } : { kind: "warn", text: `Cadastrado. Coleta automática: ${reason}` });
+      q.reload();
+    } catch (e) { setMsg({ kind: "error", text: e instanceof Error ? e.message : String(e) }); }
+  };
+  return (
+    <Card title="Vídeos publicados — monitoramento" actions={<Button variant="ghost" onClick={() => run(() => post("/analytics/published/refresh"))}>Atualizar agora</Button>}>
+      <form className="mb-3 flex gap-2" onSubmit={(e) => { e.preventDefault(); run(() => post("/analytics/published", { url })); setUrl(""); }}>
+        <input className={inputCls} required placeholder="Link do vídeo publicado (ex.: https://www.youtube.com/shorts/...)" value={url} onChange={(e) => setUrl(e.target.value)} />
+        <Button type="submit" variant="secondary">Acompanhar</Button>
+      </form>
+      {msg && <div className="mb-3"><Notice kind={msg.kind}>{msg.text}</Notice></div>}
+      <Async q={q}>
+        {(vs) => vs.length === 0 ? <Empty>Nenhum vídeo publicado cadastrado.</Empty> : (
+          <ul className="space-y-3">
+            {vs.map((v) => {
+              const last = v.snapshots.at(-1);
+              return (
+                <li key={v.id} className="rounded-lg border border-line p-3 text-sm">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <a className="font-medium text-accent hover:underline" href={v.url} target="_blank" rel="noreferrer">{v.title || v.id}</a>
+                    <span className="text-xs text-muted">publicado {fmtDate(v.published_at)} · {v.snapshots.length} coleta(s)</span>
+                  </div>
+                  {last ? (
+                    <div className="mt-2 grid grid-cols-3 gap-2">
+                      <Stat label="Visualizações" value={fmtNum(last.views)} /><Stat label="Curtidas" value={fmtNum(last.likes)} /><Stat label="Comentários" value={fmtNum(last.comments)} />
+                    </div>
+                  ) : null}
+                  {v.snapshots.length > 1 && (
+                    <table className="mt-2 w-full text-xs"><thead className="text-left text-muted"><tr><th>Coleta</th><th>Visualizações</th><th>Curtidas</th><th>Comentários</th></tr></thead>
+                      <tbody>{[...v.snapshots].reverse().slice(0, 12).map((s) => <tr key={s.ts}><td>{fmtDate(s.ts)}</td><td>{fmtNum(s.views)}</td><td>{fmtNum(s.likes)}</td><td>{fmtNum(s.comments)}</td></tr>)}</tbody></table>
+                  )}
+                  {v.last_error && <p className="mt-2 text-xs text-amber-300">{v.last_error}</p>}
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </Async>
+      <p className="mt-3 text-xs text-muted">Dados públicos (API oficial do YouTube, a cada 6 h). Retenção, CTR e impressões só existem no YouTube Studio: importe o CSV acima.</p>
+    </Card>
+  );
+}
 
 export default function Analytics() {
   const [demo, setDemo] = useState(false);
@@ -41,7 +95,8 @@ export default function Analytics() {
           <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={demo} onChange={(e) => setDemo(e.target.checked)} /> Modo demonstração</label>
         </>} />
       {msg && <div className="mb-4"><Notice kind={msg.kind}>{msg.text}</Notice></div>}
-      {demo && <div className="mb-4"><Notice kind="warn"><b>MODO DEMONSTRAÇÃO:</b> dados sintéticos gerados localmente. Não representam nenhum canal real.</Notice></div>}
+      <div className="mb-6"><PublishedVideos /></div>
+      {demo &&<div className="mb-4"><Notice kind="warn"><b>MODO DEMONSTRAÇÃO:</b> dados sintéticos gerados localmente. Não representam nenhum canal real.</Notice></div>}
       <Async q={q}>
         {({ report: r }) => r.records === 0 ? (
           <Empty>Nenhuma métrica real importada. Exporte o relatório de conteúdo do YouTube Studio (CSV) e importe aqui, ou ative o modo demonstração para ver a interface.</Empty>

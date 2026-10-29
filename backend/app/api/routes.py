@@ -12,8 +12,8 @@ from ..config import output_dir
 from ..production.branding import render_brand_assets
 from ..agents.analytics import build_report, demo_records, parse_csv
 from ..config import env, env_status, get_policy, load_json
-from ..models import (MetricRecord, NicheReport, ProductionJob, QualityReport, Script, Task, TaskStatus, TrendRun,
-                      VideoBrief, Workflow, now)
+from ..models import (MetricRecord, NicheReport, ProductionJob, PublishedVideo, QualityReport, Script, Task, TaskStatus,
+                      TrendRun, VideoBrief, Workflow, now)
 from ..orchestrator.orchestrator import ApprovalBlocked, get_orchestrator
 from ..production import ffmpeg
 from ..production.tts import get_tts
@@ -101,7 +101,8 @@ def settings() -> dict:
              "detail": "Configure YOUTUBE_API_KEY" if not yt.is_configured() else "Somente dados públicos"},
             {"name": "Google Trends", "status": "indisponível", "detail": "Sem API pública aberta"},
             {"name": f"Roteiros ({script.name})", "status": "ativo",
-             "detail": "Modo híbrido: provedor LLM ainda não implementado" if script.name == "template" else ""},
+             "detail": "Revisão por ChatGPT ativa" if env("OPENAI_API_KEY") and env("OPENAI_MODEL")
+             else "ChatGPT desativado: configure OPENAI_API_KEY e OPENAI_MODEL"},
             {"name": f"Narração ({tts.name})", "status": "ativo", "detail": tts.license},
             {"name": "FFmpeg", **({"status": "ativo", "detail": ffmpeg.available().get("version", "")}
                                   if ffmpeg.available()["available"] else {"status": "erro", "detail": "não encontrado"})},
@@ -379,6 +380,39 @@ async def analytics_import(file: UploadFile) -> dict:
     for r in records:
         get_store().put("metrics", r)
     return {"imported": len(records)}
+
+
+class PublishedIn(BaseModel):
+    url: str = Field(min_length=11, max_length=300)
+    script_id: str | None = None
+    title: str = Field("", max_length=150)
+
+
+@router.get("/analytics/published")
+def published() -> list[PublishedVideo]:
+    return get_store().list("published_videos", PublishedVideo)
+
+
+@router.post("/analytics/published")
+def add_published(body: PublishedIn) -> dict:
+    from ..research.monitoring import refresh, video_id
+
+    vid = video_id(body.url.strip())
+    if not vid:
+        raise HTTPException(422, "Link do YouTube não reconhecido")
+    script = get_store().get("scripts", body.script_id, Script) if body.script_id else None
+    v = PublishedVideo(id=vid, url=body.url.strip(), title=body.title or (script.title if script else ""), script_id=body.script_id,
+                       channel_id=script.channel_id if script else None)
+    get_store().put("published_videos", v)
+    get_store().log("info", "analytics", f"Vídeo publicado cadastrado para monitoramento: {v.url}")
+    return {"video": v, "refresh": refresh(get_store(), force=True)}
+
+
+@router.post("/analytics/published/refresh")
+def refresh_published() -> dict:
+    from ..research.monitoring import refresh
+
+    return refresh(get_store(), force=True)
 
 
 @router.post("/analytics/metrics")

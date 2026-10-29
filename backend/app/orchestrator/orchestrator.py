@@ -439,9 +439,15 @@ class Orchestrator:
             self._pool = None
 
     def _loop(self) -> None:
+        last_monitor = 0.0
         while not self._stop.is_set():
             try:
                 self.tick()
+                if time.time() - last_monitor > 3600:  # verifica de hora em hora; cada vídeo é atualizado a cada 6 h
+                    last_monitor = time.time()
+                    from ..research.monitoring import refresh
+
+                    refresh(self.store)
             except Exception as exc:  # o loop nunca morre silenciosamente
                 self.store.log("error", self.name, f"Falha no ciclo do orquestrador: {exc}")
             self._stop.wait(1.0)

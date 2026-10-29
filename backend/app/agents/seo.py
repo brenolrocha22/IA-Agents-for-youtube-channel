@@ -66,7 +66,7 @@ def hook_suggestion(script: Script) -> str:
     return tip + "Mostre a transformação na imagem já no 1º segundo e escreva a ideia central na tela (3–4 palavras)."
 
 
-def build_pack(script: Script, plan: VisualPlan | None, channel: dict) -> dict:
+def build_pack(script: Script, plan: VisualPlan | None, channel: dict, use_llm: bool = True) -> dict:
     narration = " ".join(s.narration for s in script.sections)
     subj = subject_pt(script)
     emoji = EMOJI.get(subj, "")
@@ -111,6 +111,24 @@ def build_pack(script: Script, plan: VisualPlan | None, channel: dict) -> dict:
     options = ", ".join(shown[:-1]) + f" ou {shown[-1]}" if len(shown) > 1 else (shown[0] if shown else "essa curiosidade")
     pinned = f"Qual habilidade do {subj} mais te surpreendeu: {options}? 👇 Conta aqui e sugere o próximo animal!"
 
+    # Modo híbrido: copywriting pelo LLM, mantendo a trava de honestidade dos títulos.
+    copy_note = "Textos gerados por modelo local (sem LLM)."
+    if use_llm:
+        from .llm_review import review_copy
+
+        data, rep = review_copy(narration, [s.narration for s in script.sections], channel["name"])
+        if data:
+            llm_titles = [t[:100] for t in data.get("titles", []) if t and supported(t, narration)]
+            titles = list(dict.fromkeys(llm_titles + titles))[:3]
+            if data.get("description"):
+                description = f"{data['description'].strip()}\n\nSiga o {channel['name']} para mais curiosidades reais da natureza."
+            pinned = data.get("pinned_comment") or pinned
+            dropped = len(data.get("titles", [])) - len(llm_titles)
+            copy_note = (f"Copy revisado por {rep['model']} ({rep['usage']['total_tokens']} tokens)."
+                         + (f" {dropped} título(s) do LLM descartado(s) por afirmar algo fora da narração." if dropped else ""))
+        else:
+            copy_note = f"LLM não usado: {rep['reason']}"
+
     credits = ["Fonte factual:"] + [f"- {s.title} — {s.url}" + (f" ({s.license})" if s.license else "") for s in script.sources]
     if plan:
         from ..production.documentary import used_footage
@@ -121,7 +139,7 @@ def build_pack(script: Script, plan: VisualPlan | None, channel: dict) -> dict:
     full = f"{description}\n\n{' '.join(hashtags)}\n\n— Créditos —\n{credits_text}"
     return {"titles": titles, "description": description, "hashtags": hashtags, "tags": tags, "pinned_comment": pinned,
             "credits": credits_text, "hook_suggestion": hook_suggestion(script), "youtube_description": full,
-            "notes": ["Aviso de conteúdo sintético do YouTube vale para conteúdo realista (pessoas, lugares, eventos); "
+            "notes": [copy_note, "Aviso de conteúdo sintético do YouTube vale para conteúdo realista (pessoas, lugares, eventos); "
                       "narração por TTS sobre fatos não exige, mas a decisão final é do proprietário."]}
 
 

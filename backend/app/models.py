@@ -440,6 +440,19 @@ class MetricRecord(BaseModel):
     imported_at: datetime = Field(default_factory=now)
 
 
+class PublishedVideo(BaseModel):
+    """Vídeo publicado pelo proprietário e acompanhado pelo sistema (dados públicos via API oficial)."""
+    id: str  # ID do vídeo no YouTube
+    url: str
+    title: str = ""
+    script_id: str | None = None
+    channel_id: str | None = None
+    registered_at: datetime = Field(default_factory=now)
+    published_at: str | None = None
+    snapshots: list[dict[str, Any]] = Field(default_factory=list)  # {ts, views, likes, comments}
+    last_error: str | None = None
+
+
 class AnalyticsReport(BaseModel):
     generated_at: datetime = Field(default_factory=now)
     demo: bool
