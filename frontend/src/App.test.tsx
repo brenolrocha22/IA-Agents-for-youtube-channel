@@ -51,7 +51,8 @@ test("exibe estado de erro quando a API falha", async () => {
 });
 
 test("analytics sem dados reais não inventa métricas", async () => {
-  mockFetch(() => ({ report: { demo: false, records: 0, totals: {}, comparisons: {}, recommendations: [], limitations: [] }, records: [] }));
+  mockFetch((url) => (url.includes("/published") ? []
+    : { report: { demo: false, records: 0, totals: {}, comparisons: {}, recommendations: [], limitations: [] }, records: [] }));
   render(<MemoryRouter initialEntries={["/analytics"]}><App /></MemoryRouter>);
   expect(await screen.findByText(/Nenhuma métrica real importada/)).toBeInTheDocument();
 });

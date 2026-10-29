@@ -32,7 +32,7 @@ function PublishedVideos() {
       </form>
       {msg && <div className="mb-3"><Notice kind={msg.kind}>{msg.text}</Notice></div>}
       <Async q={q}>
-        {(vs) => vs.length === 0 ? <Empty>Nenhum vídeo publicado cadastrado.</Empty> : (
+        {(vs) => !Array.isArray(vs) || vs.length === 0 ? <Empty>Nenhum vídeo publicado cadastrado.</Empty> : (
           <ul className="space-y-3">
             {vs.map((v) => {
               const last = v.snapshots.at(-1);

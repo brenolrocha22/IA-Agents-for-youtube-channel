@@ -382,6 +382,44 @@ async def analytics_import(file: UploadFile) -> dict:
     return {"imported": len(records)}
 
 
+@router.get("/library")
+def library() -> list[dict]:
+    """Vídeos renderizados (último por roteiro) com aprovação, pacote, QA e publicação/monitoramento."""
+    s = get_store()
+    tasks = s.list("tasks", Task, limit=3000)
+    reports = s.list("quality_reports", QualityReport, limit=1000)
+    published = {p.script_id: p for p in s.list("published_videos", PublishedVideo) if p.script_id}
+    latest: dict[str, ProductionJob] = {}
+    for j in s.list("jobs", ProductionJob, limit=500):  # mais recentes primeiro
+        if j.status == "rendered" and j.outputs.get("video") and j.script_id not in latest:
+            latest[j.script_id] = j
+    out = []
+    for script_id, j in latest.items():
+        sc = s.get("scripts", script_id, Script)
+        if not sc:
+            continue
+        produce = next((t for t in tasks if t.type == "produce_video" and t.result and t.result.output.get("job_id") == j.id), None)
+        wf_tasks = [t for t in tasks if produce and t.workflow_id == produce.workflow_id]
+        final = next((t for t in wf_tasks if t.type == "final_approval"), None)
+        package = next((t for t in wf_tasks if t.type == "publish_prep" and t.status == TaskStatus.completed), None)
+        qa = next((r for r in reports if r.target_id == j.id), None)
+        pub = published.get(script_id)
+        last = pub.snapshots[-1] if pub and pub.snapshots else None
+        status = "publicado" if pub else "pronto para postar" if package else "aguardando aprovação" if final and \
+            final.status == TaskStatus.awaiting_approval else "renderizado"
+        out.append({
+            "script_id": script_id, "job_id": j.id, "title": sc.title, "channel_id": sc.channel_id, "status": status,
+            "created_at": j.finished_at or j.created_at, "duration_s": j.media.get("duration_s"),
+            "video": j.outputs.get("video"), "cover": j.outputs.get("cover"), "captions": j.outputs.get("captions"),
+            "qa_blocking": qa.blocking if qa else None, "workflow_id": produce.workflow_id if produce else None,
+            "final_task_id": final.id if final and final.status == TaskStatus.awaiting_approval else None,
+            "package": package.result.output.get("publish_dir") if package and package.result else None,
+            "published": {"url": pub.url, "views": last and last["views"], "likes": last and last["likes"],
+                          "comments": last and last["comments"], "checked_at": last and last["ts"], "note": pub.last_error} if pub else None,
+        })
+    return out
+
+
 class PublishedIn(BaseModel):
     url: str = Field(min_length=11, max_length=300)
     script_id: str | None = None

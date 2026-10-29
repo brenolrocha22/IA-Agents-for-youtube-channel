@@ -48,7 +48,8 @@ export default function Dashboard() {
                     action={awaiting ? (awaiting.type === "final_approval" ? "Assistir e aprovar vídeo" : "Revisar roteiro") : running ? "Ver execução" : undefined} />
                 );
               })()}
-              <Stat label="Vídeos produzidos" value={d.videos_rendered} hint={d.videos_failed ? `${d.videos_failed} com falha` : undefined} />
+              <Stat label="Vídeos produzidos" value={d.videos_rendered} hint={d.videos_failed ? `${d.videos_failed} com falha` : undefined}
+                to={d.videos_rendered ? "/videos" : undefined} action={d.videos_rendered ? "Ver vídeos e resultados" : undefined} />
               <Stat label="Erros recentes" value={d.errors.length} tone={d.errors.length ? "red" : "default"} />
               <Stat label="Custo estimado" value={`US$ ${d.cost_estimated_usd.toFixed(2)}`} hint={`${fmtNum(d.api_calls)} chamadas de API · ${fmtNum(d.tokens_estimated)} tokens`} />
             </div>

@@ -57,6 +57,18 @@ def test_short_pipeline_end_to_end(fake_wiki):
     assert (pub / "cover.png").exists() and (pub / "editavel" / "narration.wav").exists()
     assert get_store().get("workflows", wf.id, Workflow).status == TaskStatus.completed
 
+    # Biblioteca: o vídeo aparece como pronto para postar e, depois de publicado, com o link
+    from fastapi.testclient import TestClient
+
+    from app.main import app
+
+    with TestClient(app) as c:
+        item = next(i for i in c.get("/api/library").json() if i["script_id"] == script.id)
+        assert item["status"] == "pronto para postar" and item["video"] and item["package"]
+        c.post("/api/analytics/published", json={"url": "https://www.youtube.com/shorts/sshOJpegjdw", "script_id": script.id})
+        item = next(i for i in c.get("/api/library").json() if i["script_id"] == script.id)
+        assert item["status"] == "publicado" and item["published"]["url"].endswith("sshOJpegjdw")
+
     # Editar e refazer: destrava o roteiro e volta para a aprovação editorial
     orch.rework(wf.id)
     assert get_store().get("scripts", script.id, Script).status == "draft"

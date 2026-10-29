@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { NavLink, Route, Routes } from "react-router-dom";
-import { Bot, ChefHat, Clapperboard, Compass, LayoutDashboard, LineChart, Menu, PenSquare, Settings as SettingsIcon, Target, Tv, X } from "lucide-react";
+import { Bot, ChefHat, Clapperboard, Compass, LayoutDashboard, LineChart, Menu, PenSquare, PlaySquare, Settings as SettingsIcon, Target, Tv, X } from "lucide-react";
 import Dashboard from "./pages/Dashboard";
 import Niches from "./pages/Niches";
 import Trends from "./pages/Trends";
@@ -11,6 +11,7 @@ import Analytics from "./pages/Analytics";
 import Settings from "./pages/Settings";
 import Kitchen from "./pages/Kitchen";
 import Channels from "./pages/Channels";
+import Library from "./pages/Library";
 
 export const NAV = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -18,6 +19,7 @@ export const NAV = [
   { to: "/tendencias", label: "Trend Explorer", icon: Compass },
   { to: "/studio", label: "Content Studio", icon: PenSquare },
   { to: "/factory", label: "Video Factory", icon: Clapperboard },
+  { to: "/videos", label: "Vídeos", icon: PlaySquare },
   { to: "/kitchen", label: "Reality Kitchen", icon: ChefHat },
   { to: "/canais", label: "Canais", icon: Tv },
   { to: "/agentes", label: "Agent Control", icon: Bot },
@@ -60,6 +62,7 @@ export default function App() {
             <Route path="/tendencias" element={<Trends />} />
             <Route path="/studio" element={<ContentStudio />} />
             <Route path="/factory" element={<VideoFactory />} />
+            <Route path="/videos" element={<Library />} />
             <Route path="/kitchen" element={<Kitchen />} />
             <Route path="/canais" element={<Channels />} />
             <Route path="/agentes" element={<AgentControl />} />
