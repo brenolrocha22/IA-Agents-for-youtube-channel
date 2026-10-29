@@ -343,11 +343,12 @@ class Orchestrator:
         if not task or task.status != TaskStatus.failed:
             raise ValueError("Só tarefas com falha podem ser repetidas")
         wf = self.store.get("workflows", task.workflow_id, Workflow)
-        task.status, task.attempts, task.completed_at = TaskStatus.pending, 0, None
+        # Mensagens das tentativas anteriores saem da tarefa (o histórico completo continua nos logs).
+        task.status, task.attempts, task.completed_at, task.errors = TaskStatus.pending, 0, None, []
         self.store.put("tasks", task)
         for t in self.tasks_of(wf):
             if t.status == TaskStatus.cancelled:
-                t.status, t.completed_at = TaskStatus.pending, None
+                t.status, t.completed_at, t.errors = TaskStatus.pending, None, []
                 self.store.put("tasks", t)
         wf.status, wf.finished_at, wf.tasks_executed = TaskStatus.running, None, 0
         self.store.put("workflows", wf)

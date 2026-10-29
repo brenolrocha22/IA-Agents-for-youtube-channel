@@ -275,7 +275,9 @@ def agents() -> list[dict]:
             "task_types": list(a.task_types) if a else ["editorial_approval", "final_approval"],
             "counts": {st.value: sum(t.status == st for t in mine) for st in TaskStatus},
             "last_activity": last,
-            "last_error": next((t.errors[-1] for t in mine if t.errors), None),
+            # Só mostra erro se a tarefa MAIS RECENTE do agente falhou; cancelamentos em cascata não são erros.
+            "last_error": (lambda recent: recent.errors[-1] if recent and recent.status == TaskStatus.failed and recent.errors else None)(
+                max(mine, key=lambda t: t.completed_at or t.started_at or t.created_at, default=None)),
             "tokens_estimated": sum(t.result.tokens_estimated for t in mine if t.result),
             "cost_estimated_usd": round(sum(t.result.cost_estimated_usd for t in mine if t.result), 4),
         })
