@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { fmtDate, fmtNum, useApi, type Task, type TaskStatus } from "../api";
 import { Async, Bar, Card, Empty, PageHeader, StatusBadge, inputCls } from "../components/ui";
 
@@ -9,7 +10,8 @@ interface AgentInfo {
 
 export default function AgentControl() {
   const agents = useApi<AgentInfo[]>("/agents", 5000);
-  const [status, setStatus] = useState("");
+  const [params] = useSearchParams();
+  const [status, setStatus] = useState(params.get("status") ?? "");
   const tasks = useApi<Task[]>(`/tasks?limit=60${status ? `&status=${status}` : ""}`, 4000);
   const logs = useApi<{ ts: string; level: string; source: string; message: string }[]>("/logs?limit=40", 4000);
   const plans = useApi<{ id: string; script_id: string; updated_at: string; subject: string; providers: string[]; scenes: number; validated: number;

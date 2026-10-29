@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { Link } from "react-router-dom";
 import { AlertTriangle, Inbox, Loader2 } from "lucide-react";
 import type { TaskStatus } from "../api";
 
@@ -28,14 +29,23 @@ export function Card({ title, children, className = "", actions }: { title?: str
   );
 }
 
-export function Stat({ label, value, hint, tone = "default" }: { label: string; value: ReactNode; hint?: string; tone?: "default" | "red" | "blue" }) {
+export function Stat({ label, value, hint, tone = "default", to, action }: {
+  label: string; value: ReactNode; hint?: string; tone?: "default" | "red" | "blue"; to?: string; action?: string;
+}) {
   const color = tone === "red" ? "text-brand" : tone === "blue" ? "text-accent" : "text-white";
-  return (
-    <div className="rounded-xl border border-line bg-panel p-4">
+  const body = (
+    <>
       <div className="text-xs uppercase tracking-wide text-muted">{label}</div>
       <div className={`mt-1 text-2xl font-semibold ${color}`}>{value}</div>
       {hint && <div className="mt-1 text-xs text-muted">{hint}</div>}
-    </div>
+      {to && action && <div className="mt-2 text-xs font-medium text-accent opacity-70 transition group-hover:opacity-100">{action} →</div>}
+    </>
+  );
+  if (!to) return <div className="rounded-xl border border-line bg-panel p-4">{body}</div>;
+  return (
+    <Link to={to} className="group block cursor-pointer rounded-xl border border-line bg-panel p-4 transition hover:-translate-y-0.5 hover:border-accent hover:bg-panel-2 hover:shadow-lg focus-visible:border-accent">
+      {body}
+    </Link>
   );
 }
 

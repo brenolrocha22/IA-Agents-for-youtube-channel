@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Ban, RotateCcw } from "lucide-react";
 import { fmtDate, mediaUrl, post, useApi, type Job, type QualityReport, type Task, type Workflow } from "../api";
 import Approvals from "../components/Approvals";
@@ -80,13 +81,14 @@ function Pipeline({ wf }: { wf: Workflow }) {
 
 export default function VideoFactory() {
   const q = useApi<Workflow[]>("/workflows", 4000);
+  const [params] = useSearchParams();
   const [open, setOpen] = useState<string | null>(null);
   const videos = (q.data ?? []).filter((w) => ["video", "kitchen_short", "script_short"].includes(w.kind));
   return (
     <>
       <PageHeader title="Video Factory" subtitle="Fila de produção, etapas, arquivos renderizados e aprovações. Nada é publicado automaticamente." />
       <div className="space-y-6">
-        <Card title="Aprovações pendentes"><Approvals onChange={q.reload} /></Card>
+        <Card title="Aprovações pendentes"><Approvals onChange={q.reload} focusTask={params.get("task")} /></Card>
         <Card title="Fila de produção">
           <Async q={q}>
             {() => videos.length === 0 ? <Empty>Nenhum vídeo na fila. Crie um Short no Content Studio.</Empty> : (

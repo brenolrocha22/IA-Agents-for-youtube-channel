@@ -37,8 +37,17 @@ export default function Dashboard() {
           <div className="space-y-6">
             <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
               <Stat label="Projetos" value={d.project_count} />
-              <Stat label="Tarefas em andamento" value={(d.tasks_by_status.running ?? 0) + (d.tasks_by_status.awaiting_approval ?? 0)}
-                hint={`${d.tasks_by_status.awaiting_approval ?? 0} aguardando aprovação`} tone="blue" />
+              {(() => {
+                // Pendência que depende do proprietário tem prioridade: leva direto à revisão daquela tarefa.
+                const awaiting = d.active_tasks.find((t) => t.status === "awaiting_approval");
+                const running = d.active_tasks.find((t) => t.status === "running");
+                const to = awaiting ? `/factory?task=${awaiting.id}` : running ? "/agentes?status=running" : undefined;
+                return (
+                  <Stat label="Tarefas em andamento" value={(d.tasks_by_status.running ?? 0) + (d.tasks_by_status.awaiting_approval ?? 0)}
+                    hint={`${d.tasks_by_status.awaiting_approval ?? 0} aguardando aprovação`} tone="blue" to={to}
+                    action={awaiting ? (awaiting.type === "final_approval" ? "Assistir e aprovar vídeo" : "Revisar roteiro") : running ? "Ver execução" : undefined} />
+                );
+              })()}
               <Stat label="Vídeos produzidos" value={d.videos_rendered} hint={d.videos_failed ? `${d.videos_failed} com falha` : undefined} />
               <Stat label="Erros recentes" value={d.errors.length} tone={d.errors.length ? "red" : "default"} />
               <Stat label="Custo estimado" value={`US$ ${d.cost_estimated_usd.toFixed(2)}`} hint={`${fmtNum(d.api_calls)} chamadas de API · ${fmtNum(d.tokens_estimated)} tokens`} />
