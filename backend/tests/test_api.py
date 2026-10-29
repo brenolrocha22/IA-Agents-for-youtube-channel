@@ -14,7 +14,7 @@ def test_health_settings_and_no_secret_leak(monkeypatch):
         assert yt["configured"] and "value" not in yt
         assert c.get("/api/dashboard").status_code == 200
         assert c.get("/api/agents").status_code == 200
-        assert len(c.get("/api/agents").json()) == 10  # orquestrador + 7 agentes base + Reality Kitchen + Visual Hunter
+        assert len(c.get("/api/agents").json()) == 11  # orquestrador + 7 base + Reality Kitchen + Visual Hunter + SEO
 
 
 def test_channels_and_branding():

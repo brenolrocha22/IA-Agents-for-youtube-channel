@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Check, Eye, MousePointerClick, PencilLine, Repeat, Save, X } from "lucide-react";
 import { mediaUrl, post, put, useApi, type Job, type QualityReport, type Script, type Task, type Workflow } from "../api";
 import { Async, Badge, Button, Notice, StatusBadge, inputCls } from "./ui";
+import SeoPanel from "./SeoPanel";
 import VisualPlanPanel from "./VisualPlan";
 
 /** Leva a tela até o campo apontado por uma verificação de qualidade e o destaca. */
@@ -181,6 +182,12 @@ export function ApprovalReview({ taskId, onDone }: { taskId: string; onDone: () 
                 <VideoPreview job={c.job} onWatched={() => setWatched(true)} />
                 {c.job_quality && <QualityList report={c.job_quality} />}
               </>
+            )}
+            {final && c.script && (
+              <details open className="rounded-lg border border-line p-3">
+                <summary className="cursor-pointer text-sm font-semibold">Publicação no YouTube (YouTube SEO Agent)</summary>
+                <div className="mt-3"><SeoPanel scriptId={c.script.id} /></div>
+              </details>
             )}
             {c.script?.visual_plan_id && (
               <details open className="rounded-lg border border-line p-3">

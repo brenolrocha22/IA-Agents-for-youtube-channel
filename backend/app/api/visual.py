@@ -197,6 +197,20 @@ async def upload(plan_id: str, index: int, file: UploadFile, page_url: str = For
     return _save(p)
 
 
+@router.get("/seo/{script_id}")
+def seo(script_id: str) -> dict:
+    """Pacote de publicação (títulos, descrição, hashtags, tags, comentário fixado, créditos, gancho)."""
+    from ..agents.seo import build_pack, copy_ready
+    from ..channels import get_channel
+
+    script = get_store().get("scripts", script_id, Script)
+    if not script:
+        raise HTTPException(404, "Roteiro não encontrado")
+    plan = get_store().get("visual_plans", script.visual_plan_id, VisualPlan) if script.visual_plan_id else None
+    pack = build_pack(script, plan, get_channel(script.channel_id, "kitchen_short" if script.story_id else "video"))
+    return {**pack, "copy_ready": copy_ready(pack)}
+
+
 class AdaptIn(BaseModel):
     narration: str = Field(min_length=10, max_length=600)
     action: str = Field(min_length=2, max_length=80)

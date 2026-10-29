@@ -8,7 +8,9 @@ from ..config import ROOT, output_dir
 from ..models import LicensedAsset, ProductionJob, Scene, Script, Task, TaskResult, VisualPlan, now
 from ..production import documentary, pipeline
 from .base import Agent, AgentContext
+from ..channels import get_channel
 from .reality_kitchen import unauthorized_scenes
+from .seo import build_pack, copy_ready
 
 CHECKLIST = """# Checklist de publicação manual — {title}
 
@@ -98,6 +100,10 @@ class VideoProducer(Agent):
             "format": script.format, "orientation": job.orientation, "visibility_suggested": "private",
             "made_for_kids": None, "rights_manifest": job.rights_manifest, "prepared_at": now().isoformat(),
         }
+        plan = ctx.read("visual_plans", script.visual_plan_id, VisualPlan) if script.visual_plan_id else None
+        seo = build_pack(script, plan, get_channel(script.channel_id, "kitchen_short" if script.story_id else "video"))
+        meta["seo"] = seo
+        (dest / "youtube.txt").write_text(copy_ready(seo), encoding="utf-8")
         (dest / "metadata.json").write_text(json.dumps(meta, ensure_ascii=False, indent=2), encoding="utf-8")
         (dest / "CHECKLIST.md").write_text(CHECKLIST.format(title=script.title), encoding="utf-8")
         path = pipeline.rel(dest)
