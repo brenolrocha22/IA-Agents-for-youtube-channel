@@ -24,14 +24,14 @@
   "allowed_subprocesses": ["ffmpeg", "powershell-sapi-tts"],
   "allowed_write_dirs": ["data", "output", "imagens"],
   "limits": {
-    "task_timeout_s": 1800,
+    "task_timeout_s": 3600,
     "max_retries": 1,
     "max_concurrency": 2,
     "max_tasks_per_run": 30,
     "max_file_size_mb": 500,
     "max_api_calls_per_run": 300,
     "max_cost_usd_per_run": 0.5,
-    "max_render_seconds": 900,
+    "max_render_seconds": 1800,
     "max_video_duration_s": 900,
     "max_short_duration_s": 60
   }

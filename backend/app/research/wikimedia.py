@@ -122,6 +122,9 @@ _SENT = re.compile(r"(?<=[.!?])\s+(?=[A-ZÀ-Ý0-9\"“])")
 
 
 def sentences(text: str) -> list[str]:
+    # Linhas sem pontuação final são títulos de seção do texto puro da Wikipedia ("Fezes em formato de cubo"): descartar.
+    lines = [ln.strip() for ln in text.splitlines()]
+    text = " ".join(ln for ln in lines if ln and (ln[-1] in ".!?:;\"”)" or len(ln) > 120))
     clean = re.sub(r"\s*\([^)]*\)", "", text)  # remove parênteses (pronúncias, datas alternativas)
     clean = re.sub(r"\s+", " ", clean).strip()
     out = []

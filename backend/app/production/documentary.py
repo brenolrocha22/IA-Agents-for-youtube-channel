@@ -210,11 +210,22 @@ def produce_documentary(job: ProductionJob, script: Script, plan: VisualPlan, up
     tts = get_tts()
     stage("narration", 0.05, f"Narração ({tts.name}); marcas de tempo {tts.timestamps}")
     parts = [tmp / f"sec_{i:02}.wav" for i in range(len(script.sections))]
-    marks = tts.synthesize_many([(s.narration, p) for s, p in zip(script.sections, parts)], script.language, rate=VOICE_RATE)
     narration = work / "narration.wav"
-    spans = concat_wavs(parts, narration, GAP_S)
-    speech = wav_duration(narration)
-    total = speech + OUTRO_S
+    limit = limits.max_short_duration_s if script.format == "short" else limits.max_video_duration_s
+    for rate in (VOICE_RATE, 2):  # 2ª tentativa: fala ~12% mais rápida (leve), só se passar do limite
+        marks = tts.synthesize_many([(s.narration, p) for s, p in zip(script.sections, parts)], script.language, rate=rate)
+        spans = concat_wavs(parts, narration, GAP_S)
+        speech = wav_duration(narration)
+        total = speech + OUTRO_S
+        if total <= limit + 0.5:
+            break
+        job.log.append(f"Narração com {total:.1f}s acima de {limit}s; nova síntese um pouco mais rápida")
+    if total > limit + 0.5:
+        # Para antes de gastar minutos renderizando um vídeo fora do limite.
+        words = sum(len(s.narration.split()) for s in script.sections)
+        cut = int(words * (1 - (limit - OUTRO_S - 1) / speech)) + 1
+        raise ValueError(f"Narração de {total:.0f}s excede o limite de {limit}s mesmo com fala mais rápida. "
+                         f"Corte cerca de {cut} palavras do roteiro ({words} hoje) e use 'Editar e refazer'.")
 
     # 2) Timeline por cena.
     starts = [0.0] + [spans[i][0] for i in range(1, len(spans))]
@@ -295,7 +306,7 @@ def produce_documentary(job: ProductionJob, script: Script, plan: VisualPlan, up
     stage("render", 0.82, "Renderizando 1080x1920, 30 fps, H.264/AAC")
     video = work / "short_vertical.mp4"
     # Imagens fixas entram em loop (fluxo contínuo); legendas via libass a partir da pasta de trabalho (caminhos relativos).
-    loop = ["-loop", "1", "-framerate", str(FPS), "-t", f"{total:.3f}"]
+    loop = ["-loop", "1", "-framerate", "1", "-t", f"{total:.3f}"]  # imagem fixa: 1 quadro/s basta (overlay repete)
     inputs = ["-i", str(base), "-i", str(narration), "-i", str(music), "-i", str(sfx),
               *loop, "-i", str(badge), *loop, "-i", str(endcard)]
     graph = [audio.MIX_FILTER.format(sr=audio.SR, dur=total, **audio.levels(channel)),
@@ -305,7 +316,7 @@ def produce_documentary(job: ProductionJob, script: Script, plan: VisualPlan, up
     script_file = tmp / "graph.txt"
     script_file.write_text(";\n".join(graph), encoding="utf-8")
     ffmpeg.run(["-y", *inputs, "-filter_complex_script", "graph.txt", "-map", "[v]", "-map", "[a]", "-r", str(FPS),
-                "-c:v", "libx264", "-preset", "medium", "-crf", "20", "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "192k",
+                "-c:v", "libx264", "-preset", "fast", "-crf", "20", "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "192k",
                 "-movflags", "+faststart", "-t", f"{total:.3f}", str(video)], limits.max_render_seconds, cwd=tmp)
 
     cover = work / "cover.png"

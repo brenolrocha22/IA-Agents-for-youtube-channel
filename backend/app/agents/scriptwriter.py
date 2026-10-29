@@ -12,7 +12,8 @@ from ..config import env
 from ..models import Script, ScriptSection, Task, TaskResult, VideoBrief
 from .base import Agent, AgentContext
 
-WORDS_PER_SECOND = 2.3  # calibrado com a voz SAPI pt-BR (velocidade 1) em 2026-10-29
+LIST_TARGET_S = 52  # alvo do formato lista (margem para pausas entre cenas e encerramento)
+WORDS_PER_SECOND = 1.75  # calibrado com a voz Daniel (WinRT) em 2026-10-30: 1,6–1,9 palavras/s medidas
 
 # Pares de loop: a frase final (loop) termina de forma que o gancho (hook) a complete.
 # A resposta prometida sempre é entregue antes do loop (D10).
@@ -67,10 +68,13 @@ class TemplateScriptProvider:
         sections = [ScriptSection(kind="hook", heading="Gancho", narration=f"{n} {t} que você precisa conhecer.",
                                   on_screen_text=f"TOP {n}", visual_note="Abertura rápida com o 1º item.",
                                   visual_subject=brief.items[0]["title_en"])]
+        # Orçamento de palavras: tudo precisa caber em ~55 s na velocidade real da voz.
+        budget = int(LIST_TARGET_S * WORDS_PER_SECOND) - 16  # gancho + fechamento
+        per_item = max(7, budget // max(1, n) - 4)  # "Número k: Nome." ocupa ~4 palavras
         for k, item in enumerate(brief.items, 1):
             sections.append(ScriptSection(
-                # ~18 palavras por item: 5 itens + gancho + fechamento cabem em 60s
-                kind="point", heading=f"{k}. {item['title']}", narration=f"Número {k}: {item['title']}. {_short_fact(item['fact'], 18)}",
+                kind="point", heading=f"{k}. {item['title']}",
+                narration=f"Número {k}: {item['title']}. {_short_fact(item['fact'], per_item)}",
                 on_screen_text=f"#{k} {item['title'].upper()}", source_ids=[item["source_id"]],
                 visual_note=f"Filmagem real de {item['title']}.", visual_subject=item["title_en"], visual_query=item["title_en"]))
         sections.append(ScriptSection(kind="payoff", heading="Fechamento", narration="Qual desses é o seu favorito? Conta nos comentários.",

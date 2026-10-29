@@ -27,6 +27,18 @@ def classify(text: str, niches: list[dict]) -> str:
     return best
 
 
+def pick_short_fact(sentences: list[str], max_words: int) -> str | None:
+    """Frase COMPLETA e curta (nunca truncada): prefere números/superlativos entre as que cabem no orçamento."""
+    fits = [(i, s) for i, s in enumerate(sentences[:60]) if len(s.split()) <= max_words]
+    if not fits:  # nenhuma cabe: a mais curta inteira (o limite de duração avisa se passar)
+        return min(sentences[:60], key=lambda s: len(s.split())) if sentences else None
+    def score(item: tuple[int, str]) -> float:
+        i, s = item
+        low = s.lower()
+        return 2 * any(ch.isdigit() for ch in s) + sum(w in low for w in INTEREST_WORDS) - i * 0.03
+    return max(fits, key=score)[1]
+
+
 def pick_facts(sentences: list[str], k: int) -> list[str]:
     """Prefere frases com números ou superlativos (curiosidades), mantendo a ordem original."""
     scored = []
@@ -132,12 +144,17 @@ class TrendHunter(Agent):
 
     def _research_list(self, ctx: AgentContext, topic: str, items: list[str], lang: str) -> TaskResult:
         """Formato Lista/Top N: um fato verificado + nome em inglês (busca de filmagem) por item."""
+        from .scriptwriter import LIST_TARGET_S, WORDS_PER_SECOND
+
         out, sources = [], []
+        n = len(items[:10])
+        max_words = max(8, (int(LIST_TARGET_S * WORDS_PER_SECOND) - 16) // max(1, n) - 4)
         for name in items[:10]:
             ctx.check_cancelled()
             summ, resolved = self._summary(ctx, lang, name.replace(" ", "_"))
-            text = wm.page_text(ctx.store, lang, resolved, ctx.budget, max_chars=4000)
-            facts = pick_facts(wm.sentences(summ["extract"] + " " + text), 1)
+            text = wm.page_text(ctx.store, lang, resolved, ctx.budget, max_chars=6000)
+            fact = pick_short_fact(wm.sentences(summ["extract"] + "\n" + text), max_words)
+            facts = [fact] if fact else []
             if not facts:
                 raise ValueError(f"Nenhum fato utilizável para '{name}'")
             src = ResearchSource(provider=wm.PROVIDER, title=f"Wikipedia: {summ['title']}", url=summ["url"], license=wm.LICENSE)

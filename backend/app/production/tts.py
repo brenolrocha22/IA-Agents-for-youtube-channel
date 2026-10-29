@@ -200,7 +200,7 @@ class WinRTTTS:
     def synthesize_many(self, items: list[tuple[str, Path]], lang: str, rate: int = 0) -> list[list[dict]]:
         q = lambda p: "'" + str(p).replace("'", "''") + "'"  # noqa: E731
         pitch = env("TTS_PITCH", "-12%")
-        speed = env("TTS_RATE", "-3%" if rate <= 0 else "+4%")
+        speed = env("TTS_RATE", {0: "-3%", 1: "+4%"}.get(rate, "+12%") if rate >= 0 else "-3%")
         if not re.fullmatch(r"[+-]?\d{1,2}%", pitch) or not re.fullmatch(r"[+-]?\d{1,2}%", speed):
             raise ValueError("TTS_PITCH/TTS_RATE inválidos (ex.: -12%)")
         lines = [
