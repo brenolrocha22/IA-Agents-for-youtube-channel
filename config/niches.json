@@ -1,0 +1,220 @@
+{
+  "_doc": "Nichos avaliados. 'seeds' = artigos da Wikipedia usados como proxy de demanda por idioma. 'hypotheses' = valores 0-100 NÃO observados, definidos editorialmente e editáveis pelo proprietário (maior = melhor; em 'risco', maior = mais seguro). 'risks' com severidade 'critical' impedem a recomendação.",
+  "niches": [
+    {
+      "id": "natureza_animais", "name": "Natureza e animais",
+      "seeds": { "en": ["Animal", "Octopus", "Biodiversity"], "pt": ["Animalia", "Polvo", "Biodiversidade"] },
+      "youtube_query": { "en": "animal facts", "pt": "curiosidades animais" },
+      "trend_keywords": ["animal", "species", "espécie", "shark", "tubarão", "whale", "baleia", "bird", "ave", "insect", "inseto", "forest", "floresta", "ocean", "oceano", "nature", "natureza", "dinosaur", "dinossauro"],
+      "hypotheses": {
+        "concorrencia": [45, "Canais grandes de documentário existem, mas Shorts em pt-BR com curiosidades verificadas têm espaço."],
+        "retencao": [75, "Curiosidades visuais sobre animais costumam prender a atenção; hipótese a testar."],
+        "monetizacao": [60, "Tema seguro para anunciantes e para todos os públicos; sem CPM assumido."],
+        "producao": [55, "Sem imagens licenciadas o formato perde força; ilustrações originais ou bancos com licença são necessários."],
+        "risco": [80, "Baixo risco de política; imagens de documentários são protegidas."]
+      },
+      "risks": [
+        { "code": "imagens", "label": "Imagens de documentários (BBC, Nat Geo etc.) são protegidas; usar só material licenciado ou original", "severity": "high" },
+        { "code": "precisao", "label": "Curiosidades virais costumam ser falsas: verificar em fonte científica", "severity": "medium" }
+      ],
+      "opportunities": ["Curiosidades de animais com fonte científica", "Mitos populares sobre animais checados"]
+    },
+    {
+      "id": "reality_cozinha", "name": "Reality shows de cozinha",
+      "seeds": { "en": ["Kitchen_Nightmares", "Hell's_Kitchen_(American_TV_series)", "Gordon_Ramsay"], "pt": ["Pesadelo_na_Cozinha", "Hell's_Kitchen:_Cozinha_sob_Pressão", "Érick_Jacquin"] },
+      "youtube_query": { "en": "kitchen nightmares story", "pt": "pesadelo na cozinha história" },
+      "trend_keywords": ["restaurant", "restaurante", "chef", "cozinha", "kitchen", "masterchef", "jacquin", "ramsay"],
+      "hypotheses": {
+        "concorrencia": [35, "Muitos canais publicam cortes dos programas (frequentemente sem licença); recontar com análise original diferencia."],
+        "retencao": [80, "Conflito + transformação é uma estrutura narrativa forte; hipótese a testar."],
+        "monetizacao": [50, "Cortes de programa são reivindicados por Content ID; formato narrado original é mais seguro, sem garantia."],
+        "producao": [65, "Narração e gráficos originais são viáveis localmente; sem cenas do programa."],
+        "risco": [40, "Alto risco se usar cenas do programa; moderado com recontagem original."]
+      },
+      "risks": [
+        { "code": "cenas", "label": "Cenas dos episódios são protegidas: canal de 'melhores momentos' com clipes exige licença da emissora", "severity": "high" },
+        { "code": "pessoas", "label": "Participantes são pessoas reais: não atribuir falas ou condutas sem fonte", "severity": "high" }
+      ],
+      "opportunities": ["Recontar episódios com linha do tempo e análise original", "O que aconteceu depois (com fonte)"]
+    },
+    {
+      "id": "tecnologia_ia", "name": "Tecnologia e IA",
+      "seeds": { "en": ["Artificial_intelligence", "ChatGPT", "Large_language_model"], "pt": ["Inteligência_artificial", "ChatGPT", "Modelo_de_linguagem_grande"] },
+      "youtube_query": { "en": "artificial intelligence explained", "pt": "inteligência artificial explicada" },
+      "trend_keywords": ["artificial intelligence", "inteligência artificial", "software", "chatbot", "openai", "google", "apple", "microsoft", "smartphone", "computer", "computador", "technology", "tecnologia", "nvidia"],
+      "hypotheses": {
+        "concorrencia": [35, "Muitos canais grandes publicam diariamente; diferenciação depende de ângulo prático."],
+        "retencao": [60, "Explicações com demonstração retêm bem; notícias envelhecem rápido."],
+        "monetizacao": [75, "Anunciantes de software/SaaS e afiliados de ferramentas são comuns no segmento (sem valor de CPM assumido)."],
+        "producao": [70, "Viável com gráficos gerados localmente e capturas de tela próprias."],
+        "risco": [70, "Baixo risco de direitos se não usar material de terceiros; risco de desinformação."]
+      },
+      "risks": [
+        { "code": "obsolescencia", "label": "Conteúdo envelhece rápido", "severity": "medium" },
+        { "code": "desinformacao", "label": "Afirmações técnicas exigem verificação", "severity": "medium" }
+      ],
+      "opportunities": ["Tutoriais práticos de ferramentas de IA para tarefas cotidianas", "Explicações de conceitos sem jargão"]
+    },
+    {
+      "id": "financas_pessoais", "name": "Finanças pessoais",
+      "seeds": { "en": ["Personal_finance", "Compound_interest", "Index_fund"], "pt": ["Finanças_pessoais", "Juros_compostos", "Tesouro_Direto"] },
+      "youtube_query": { "en": "personal finance tips", "pt": "finanças pessoais dicas" },
+      "trend_keywords": ["finance", "finanças", "bank", "banco", "stock", "bolsa", "bitcoin", "inflation", "inflação", "tax", "imposto", "dólar", "economy", "economia"],
+      "hypotheses": {
+        "concorrencia": [40, "Nicho maduro com criadores estabelecidos em ambos os idiomas."],
+        "retencao": [55, "Público busca respostas objetivas; retenção depende de clareza."],
+        "monetizacao": [80, "Segmento historicamente procurado por anunciantes financeiros; não implica CPM específico."],
+        "producao": [75, "Gráficos e texto gerados localmente são suficientes."],
+        "risco": [55, "Tema YMYL: erros causam dano ao espectador; possível regulação de recomendações."]
+      },
+      "risks": [
+        { "code": "ymyl", "label": "Conselho financeiro (YMYL) exige precisão e avisos", "severity": "high" },
+        { "code": "regulacao", "label": "Recomendação de investimentos pode ser regulada (verificar regras da CVM no Brasil)", "severity": "high" }
+      ],
+      "opportunities": ["Educação financeira básica com exemplos numéricos próprios", "Comparações explicadas sem recomendar produtos específicos"]
+    },
+    {
+      "id": "negocios", "name": "Negócios e empreendedorismo",
+      "seeds": { "en": ["Entrepreneurship", "Startup_company", "Small_business"], "pt": ["Empreendedorismo", "Startup", "Microempreendedor_individual"] },
+      "youtube_query": { "en": "business case study", "pt": "empreendedorismo estudo de caso" },
+      "trend_keywords": ["company", "empresa", "business", "negócio", "ceo", "startup", "brand", "marca", "founder"],
+      "hypotheses": {
+        "concorrencia": [45, "Estudos de caso de empresas têm espaço para formatos narrativos."],
+        "retencao": [55, "Histórias de empresas retêm; conselhos genéricos não."],
+        "monetizacao": [70, "Afiliados de ferramentas e cursos; patrocínios B2B possíveis."],
+        "producao": [70, "Gráficos e linha do tempo gerados localmente; logos exigem cuidado."],
+        "risco": [70, "Risco de promessas de enriquecimento e uso de marcas."]
+      },
+      "risks": [
+        { "code": "promessas", "label": "Evitar promessas de ganhos", "severity": "medium" },
+        { "code": "marcas", "label": "Uso de logotipos e marcas de terceiros", "severity": "medium" }
+      ],
+      "opportunities": ["Estudos de caso de empresas com fontes públicas", "Histórias de origem de marcas conhecidas"]
+    },
+    {
+      "id": "documentarios_misterios", "name": "Documentários e mistérios",
+      "seeds": { "en": ["Bermuda_Triangle", "Dyatlov_Pass_incident", "Voynich_manuscript"], "pt": ["Triângulo_das_Bermudas", "Incidente_do_Passo_Diatlov", "Manuscrito_Voynich"] },
+      "youtube_query": { "en": "unsolved mystery documentary", "pt": "mistério não resolvido documentário" },
+      "trend_keywords": ["mystery", "mistério", "disappearance", "desaparecimento", "unsolved", "conspiracy", "ufo", "ovni", "ghost"],
+      "hypotheses": {
+        "concorrencia": [45, "Muitos canais, mas espaço para pesquisa rigorosa e temas pouco explorados."],
+        "retencao": [80, "Formato narrativo com pergunta central favorece retenção."],
+        "monetizacao": [55, "Temas violentos ou trágicos podem ter anúncios limitados."],
+        "producao": [50, "Exige muito material visual; imagens de arquivo precisam de licença."],
+        "risco": [50, "Direitos de imagem e adequação a anunciantes."]
+      },
+      "risks": [
+        { "code": "anunciantes", "label": "Crimes/tragédias podem ter monetização limitada", "severity": "high" },
+        { "code": "imagens", "label": "Imagens de arquivo com direitos de terceiros", "severity": "high" },
+        { "code": "especulacao", "label": "Risco de especulação sem fonte", "severity": "medium" }
+      ],
+      "opportunities": ["Mistérios científicos e históricos (não violentos)", "Investigações com fontes primárias"]
+    },
+    {
+      "id": "historias", "name": "Histórias e storytelling",
+      "seeds": { "en": ["Roman_Empire", "Titanic", "Ancient_Egypt"], "pt": ["Império_Romano", "Titanic", "Antigo_Egito"] },
+      "youtube_query": { "en": "history story explained", "pt": "história explicada" },
+      "trend_keywords": ["history", "história", "empire", "império", "war", "guerra", "king", "rei", "ancient", "antigo", "dynasty"],
+      "hypotheses": {
+        "concorrencia": [50, "Grande volume de conteúdo, mas temas de nicho são pouco cobertos em pt-BR."],
+        "retencao": [75, "Narrativas com arco claro retêm bem."],
+        "monetizacao": [55, "Público amplo; temas de guerra podem ter restrições."],
+        "producao": [55, "Muitas obras em domínio público, mas é preciso verificar cada uma."],
+        "risco": [65, "Direitos de imagens e precisão histórica."]
+      },
+      "risks": [
+        { "code": "imagens", "label": "Verificar domínio público de cada imagem", "severity": "medium" },
+        { "code": "violencia", "label": "Guerras podem limitar anúncios", "severity": "medium" }
+      ],
+      "opportunities": ["Histórias curtas pouco conhecidas", "Séries temáticas por civilização"]
+    },
+    {
+      "id": "ciencia_espaco", "name": "Ciência e espaço",
+      "seeds": { "en": ["Black_hole", "Mars", "James_Webb_Space_Telescope"], "pt": ["Buraco_negro", "Marte_(planeta)", "Telescópio_Espacial_James_Webb"] },
+      "youtube_query": { "en": "space explained", "pt": "espaço universo explicado" },
+      "trend_keywords": ["space", "espaço", "nasa", "planet", "planeta", "star", "estrela", "comet", "cometa", "asteroid", "asteroide", "science", "ciência", "physics", "física", "spacex", "rocket"],
+      "hypotheses": {
+        "concorrencia": [55, "Canais grandes em inglês; menos oferta de qualidade em pt-BR."],
+        "retencao": [70, "Curiosidade e escala visual favorecem retenção."],
+        "monetizacao": [55, "Educacional e seguro para anunciantes; sem CPM assumido."],
+        "producao": [70, "Imagens de agências espaciais frequentemente têm uso liberal (verificar diretrizes de cada agência)."],
+        "risco": [80, "Baixo risco de política; atenção à precisão."]
+      },
+      "risks": [
+        { "code": "precisao", "label": "Afirmações científicas exigem fontes primárias", "severity": "medium" }
+      ],
+      "opportunities": ["Explicações visuais de escala do universo", "Notícias de missões com contexto"]
+    },
+    {
+      "id": "games", "name": "Games",
+      "seeds": { "en": ["Minecraft", "Roblox", "Grand_Theft_Auto_VI"], "pt": ["Minecraft", "Roblox", "Grand_Theft_Auto_VI"] },
+      "youtube_query": { "en": "gaming news", "pt": "notícias games" },
+      "trend_keywords": ["game", "jogo", "video game", "playstation", "xbox", "nintendo", "steam", "esports"],
+      "hypotheses": {
+        "concorrencia": [25, "Um dos segmentos mais saturados da plataforma."],
+        "retencao": [65, "Alta afinidade do público, mas formatos dependem de gameplay."],
+        "monetizacao": [45, "Público jovem; anúncios variam muito por tema."],
+        "producao": [35, "Exige captura de gameplay real; sem isso o formato fica fraco."],
+        "risco": [40, "Uso de gameplay depende da política de cada editora; risco de conteúdo reutilizado."]
+      },
+      "risks": [
+        { "code": "gameplay", "label": "Direitos de gameplay variam por editora", "severity": "high" },
+        { "code": "reutilizado", "label": "Clipes sem comentário original violam a política de conteúdo reutilizado", "severity": "high" }
+      ],
+      "opportunities": ["Análises de design de jogos com gameplay próprio", "História da indústria"]
+    },
+    {
+      "id": "futebol", "name": "Futebol e esportes",
+      "seeds": { "en": ["Association_football", "FIFA_World_Cup", "Lionel_Messi"], "pt": ["Futebol", "Copa_do_Mundo_FIFA", "Neymar"] },
+      "youtube_query": { "en": "football analysis", "pt": "futebol análise" },
+      "trend_keywords": ["football", "futebol", "soccer", "fc", "league", "liga", "copa", "cup", "nba", "nfl", "sport", "esporte", "clube"],
+      "hypotheses": {
+        "concorrencia": [30, "Saturado, com canais oficiais de clubes e ligas."],
+        "retencao": [60, "Alta paixão do público, mas sazonal."],
+        "monetizacao": [50, "Anunciantes presentes; apostas trazem riscos de política."],
+        "producao": [30, "Sem imagens de jogos o formato perde valor; imagens licenciadas são caras."],
+        "risco": [25, "Imagens de partidas são intensamente protegidas (reivindicações automáticas)."]
+      },
+      "risks": [
+        { "code": "imagens_partidas", "label": "Imagens de partidas são protegidas e geram reivindicações de direitos", "severity": "critical" },
+        { "code": "apostas", "label": "Conteúdo de apostas tem restrições", "severity": "high" }
+      ],
+      "opportunities": ["Análise tática com gráficos próprios", "História de clubes com fontes públicas"]
+    },
+    {
+      "id": "psicologia", "name": "Psicologia e comportamento",
+      "seeds": { "en": ["Psychology", "Narcissistic_personality_disorder", "Cognitive_bias"], "pt": ["Psicologia", "Transtorno_de_personalidade_narcisista", "Viés_cognitivo"] },
+      "youtube_query": { "en": "psychology explained", "pt": "psicologia explicada" },
+      "trend_keywords": ["psychology", "psicologia", "behavior", "comportamento", "mental", "anxiety", "ansiedade", "brain", "cérebro", "disorder", "transtorno"],
+      "hypotheses": {
+        "concorrencia": [45, "Muitos canais, qualidade desigual; espaço para conteúdo baseado em evidências."],
+        "retencao": [70, "Identificação pessoal favorece retenção."],
+        "monetizacao": [60, "Seguro se não tratar de autolesão; anúncios variam."],
+        "producao": [75, "Gráficos e texto locais bastam."],
+        "risco": [60, "Saúde mental é tema sensível (informações médicas)."]
+      },
+      "risks": [
+        { "code": "saude", "label": "Informação de saúde exige fontes confiáveis e avisos", "severity": "high" },
+        { "code": "diagnostico", "label": "Evitar pseudodiagnósticos", "severity": "medium" }
+      ],
+      "opportunities": ["Vieses cognitivos do cotidiano com estudos citados", "Mitos de psicologia popular checados"]
+    },
+    {
+      "id": "tutoriais_software", "name": "Tutoriais de software",
+      "seeds": { "en": ["Microsoft_Excel", "Python_(programming_language)", "Canva"], "pt": ["Microsoft_Excel", "Python", "Canva"] },
+      "youtube_query": { "en": "excel tutorial", "pt": "tutorial excel" },
+      "trend_keywords": ["excel", "windows", "python", "programming", "programação", "tutorial", "linux", "app"],
+      "hypotheses": {
+        "concorrencia": [40, "Busca de cauda longa: há espaço em problemas específicos."],
+        "retencao": [55, "Espectador sai ao resolver o problema; retenção menor, buscas constantes."],
+        "monetizacao": [70, "Afiliados de software e cursos são comuns."],
+        "producao": [60, "Exige gravação de tela real, que a pipeline atual não gera."],
+        "risco": [85, "Baixo risco de direitos com gravações próprias."]
+      },
+      "risks": [
+        { "code": "gravacao", "label": "Precisa de gravação de tela própria (não automatizada no MVP)", "severity": "medium" }
+      ],
+      "opportunities": ["Soluções para erros específicos", "Séries de iniciante a avançado"]
+    }
+  ]
+}

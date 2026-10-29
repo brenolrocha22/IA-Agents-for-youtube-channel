@@ -1,0 +1,35 @@
+{
+  "_doc": "Canais do proprietário. Editável. 'workflows' indica quais fluxos produzem para o canal. 'name_pending' = nome provisório aguardando decisão.",
+  "channels": [
+    {
+      "id": "clips_plus",
+      "name": "Clip+",
+      "name_pending": false,
+      "focus": "Melhores momentos de reality shows de restaurante (S.O.S. Restaurante / Restaurant: Impossible, com Robert Irvine), recontados com narração, legendas e visuais originais",
+      "tagline": "Restaurantes em crise. Histórias em 60 segundos.",
+      "icon": "chef",
+      "icon_color": [255, 255, 255],
+      "style": "clip_reality",
+      "audio": { "voice": 0.55, "music": 0.35, "sfx": 0.35, "transitions": false },
+      "palette": { "top": [13, 13, 18], "bottom": [73, 11, 22], "accent": [239, 62, 66], "accent2": [255, 210, 26] },
+      "hashtags": ["#shorts", "#restaurante", "#realityshow", "#clipplus"],
+      "workflows": ["kitchen_short"],
+      "default_niche": "reality_cozinha"
+    },
+    {
+      "id": "natureza",
+      "name": "Clip+ Nat",
+      "name_pending": false,
+      "focus": "Ciência e curiosidades da natureza e dos animais, no estilo documentário curto",
+      "tagline": "A natureza é mais estranha do que parece.",
+      "icon": "leaf",
+      "style": "nat_wild",
+      "require_footage": true,
+      "audio": { "voice": 0.55, "music": 0.35, "sfx": 0.35, "transitions": false },
+      "palette": { "top": [12, 24, 20], "bottom": [10, 64, 48], "accent": [52, 211, 153], "accent2": [56, 189, 248] },
+      "hashtags": ["#shorts", "#natureza", "#animais", "#curiosidades"],
+      "workflows": ["video"],
+      "default_niche": "natureza_animais"
+    }
+  ]
+}

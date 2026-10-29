@@ -1,0 +1,34 @@
+{
+  "_doc": "Roteiro do Short do polvo escrito pelo proprietário (2026-10-30). visual_action = o que a imagem precisa mostrar.",
+  "title": "O mestre do disfarce do oceano",
+  "channel_id": "natureza",
+  "topic": "Polvo",
+  "topic_en": "octopus",
+  "tone": "documentario",
+  "sources": [
+    {"title": "Wikipedia: Polvo", "url": "https://pt.wikipedia.org/wiki/Polvo", "license": "CC BY-SA 4.0 (texto da Wikipedia)"}
+  ],
+  "sections": [
+    {"kind": "hook", "heading": "Gancho", "on_screen_text": "MUDA EM SEGUNDOS",
+     "narration": "Você sabia que existe um animal capaz de mudar de aparência em segundos?",
+     "visual_action": "color|camouflage", "visual_query": "octopus changing color camouflage"},
+    {"kind": "context", "heading": "Quem é", "on_screen_text": "O POLVO",
+     "narration": "O polvo é um dos animais mais surpreendentes e inteligentes do oceano.",
+     "visual_action": "swimming|intelligence", "visual_query": "octopus swimming exploring"},
+    {"kind": "point", "heading": "Cor", "on_screen_text": "MUDA DE COR",
+     "narration": "Ele consegue alterar a cor e os padrões da própria pele, confundindo predadores e se misturando ao ambiente.",
+     "visual_action": "color", "visual_query": "octopus changing color"},
+    {"kind": "point", "heading": "Textura", "on_screen_text": "MUDA A TEXTURA",
+     "narration": "E algumas espécies também modificam a textura da pele, imitando rochas e outras superfícies.",
+     "visual_action": "texture|camouflage", "visual_query": "octopus skin texture camouflage"},
+    {"kind": "point", "heading": "Braços", "on_screen_text": "OITO BRAÇOS",
+     "narration": "Seus oito braços possuem ventosas que ajudam a explorar o ambiente e capturar suas presas.",
+     "visual_action": "prey|arms", "visual_query": "octopus catching prey arms"},
+    {"kind": "point", "heading": "Tinta", "on_screen_text": "NUVEM DE TINTA",
+     "narration": "E quando o perigo aparece, muitos polvos conseguem liberar tinta para confundir seus inimigos e escapar.",
+     "visual_action": "ink", "visual_query": "octopus releasing ink"},
+    {"kind": "payoff", "heading": "Conclusão", "on_screen_text": "MESTRE DA SOBREVIVÊNCIA",
+     "narration": "Com inteligência, camuflagem e estratégias de defesa, o polvo é um verdadeiro mestre da sobrevivência. A natureza nunca deixa de surpreender!",
+     "visual_action": "camouflage|swimming", "visual_query": "octopus camouflage"}
+  ]
+}
