@@ -33,10 +33,13 @@ class Store:
         self.path = path
         self._lock = threading.Lock()
         with self._conn() as c:
+            # WAL: leituras (painel, API) não bloqueiam durante gravações de agentes em outras threads/processos.
+            c.execute("PRAGMA journal_mode=WAL")
             c.executescript(_SCHEMA)
 
     def _conn(self) -> sqlite3.Connection:
-        conn = sqlite3.connect(self.path, timeout=10, check_same_thread=False)
+        conn = sqlite3.connect(self.path, timeout=30, check_same_thread=False)
+        conn.execute("PRAGMA busy_timeout=30000")
         conn.row_factory = sqlite3.Row
         return conn
 

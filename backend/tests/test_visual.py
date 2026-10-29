@@ -40,6 +40,10 @@ def test_metadata_score_avoids_false_positives():
     # assunto errado ou contexto excluído
     assert metadata_score(cand("Laser tattoo removal", "ink"), syn, "ink")[0] == 0
     assert metadata_score(cand("How to cook octopus", "recipe"), syn, "")[0] == 0
+    koala = ("koala",)
+    assert metadata_score(cand("AgustaWestland AW119 Koala", "helicopter"), koala, "")[0] == 0
+    assert metadata_score(cand("Ostriches sleep like platypuses", ""), ("platypus", "platypuses"), "")[0] == 0
+    assert metadata_score(cand("Koala eating eucalyptus", ""), koala, "")[0] > 0
 
 
 def test_coverage_counts_only_validated_time():

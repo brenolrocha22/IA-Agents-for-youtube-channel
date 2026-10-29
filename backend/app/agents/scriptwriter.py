@@ -69,7 +69,8 @@ class TemplateScriptProvider:
                                   visual_subject=brief.items[0]["title_en"])]
         for k, item in enumerate(brief.items, 1):
             sections.append(ScriptSection(
-                kind="point", heading=f"{k}. {item['title']}", narration=f"Número {k}: {item['title']}. {_short_fact(item['fact'], 30)}",
+                # ~18 palavras por item: 5 itens + gancho + fechamento cabem em 60s
+                kind="point", heading=f"{k}. {item['title']}", narration=f"Número {k}: {item['title']}. {_short_fact(item['fact'], 18)}",
                 on_screen_text=f"#{k} {item['title'].upper()}", source_ids=[item["source_id"]],
                 visual_note=f"Filmagem real de {item['title']}.", visual_subject=item["title_en"], visual_query=item["title_en"]))
         sections.append(ScriptSection(kind="payoff", heading="Fechamento", narration="Qual desses é o seu favorito? Conta nos comentários.",

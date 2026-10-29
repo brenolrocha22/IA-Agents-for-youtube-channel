@@ -40,7 +40,15 @@ SUBJECTS = {"polvo": ("octopus", ("octopus", "octopod", "krake", "poulpe", "pulp
             "tubarão": ("shark", ("shark",)), "baleia": ("whale", ("whale",)), "golfinho": ("dolphin", ("dolphin",)),
             "tartaruga": ("turtle", ("turtle",)), "água-viva": ("jellyfish", ("jellyfish", "medusa")),
             "axolote": ("axolotl", ("axolotl",)), "camaleão": ("chameleon", ("chameleon",)), "abelha": ("bee", ("bee",))}
-EXCLUDE = ("tattoo", "cook", "recipe", "mukbang", "reader", "neon", "dust", "flour", "reaction", "consumption", "laser")
+EXCLUDE = ("tattoo", "cook", "recipe", "mukbang", "reader", "neon", "dust", "flour", "reaction", "consumption", "laser",
+           # veículos/produtos com nome de animal, entrevistas e compilações de outros criadores
+           "helicopter", "aircraft", "agustawestland", "aw119", "airline", "locomotive", "border guard", "interview", "entretien",
+           "talk show", "facts about", "top 10", "compilation", "trailer", "logo", "mascot", "toy", "plush")
+
+
+def compares_other_subject(text: str, syn: tuple[str, ...]) -> bool:
+    """'Ostriches sleep like platypuses': o assunto só aparece como comparação."""
+    return any(re.search(rf"\b(like|than|as)[\s\-_]+(an?[\s\-_]+)?{re.escape(s)}", text) for s in syn)
 
 
 def _norm(s: str) -> str:
@@ -78,7 +86,7 @@ def parse_action(action: str) -> list[list[str]]:
 
 def metadata_score(c: VisualCandidate, subject_syn: tuple[str, ...], action: str) -> tuple[float, list[str]]:
     text = _norm(f"{c.title} {c.description}")
-    if not any(s in text for s in subject_syn) or any(x in text for x in EXCLUDE):
+    if not any(s in text for s in subject_syn) or any(x in text for x in EXCLUDE) or compares_other_subject(text, subject_syn):
         return 0.0, []
     req = parse_action(action)
     if not req:
@@ -99,6 +107,8 @@ def queries_for(subject_en: str, action: str, explicit: str | None) -> list[str]
     for alts in parse_action(action):
         qs += [f"{subject_en} {ACTIONS[g][1]}" for g in alts if g in ACTIONS]
     qs.append(subject_en)
+    if not parse_action(action):  # só o assunto (ex.: formato lista): variações para ampliar o acervo
+        qs += [f"{subject_en} wild", f"{subject_en} zoo"]
     return list(dict.fromkeys(q for q in qs if q))
 
 
