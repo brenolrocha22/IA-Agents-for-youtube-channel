@@ -1,0 +1,21 @@
+{
+  "name": "geozoom-agent",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "GeoZoom Agent: aproximação cinematográfica da Terra até um país/região (CesiumJS + Puppeteer + FFmpeg).",
+  "scripts": {
+    "render": "tsx src/cli.ts",
+    "test": "tsx --test test/*.test.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "cesium": "^1.146.0",
+    "puppeteer-core": "^25.16.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2"
+  }
+}

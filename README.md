@@ -7,6 +7,24 @@ produzir vídeos localmente com FFmpeg, verificar qualidade/direitos e organizar
 Documentos: [AGENTS.md](AGENTS.md) · [SPEC.md](SPEC.md) · [ARCHITECTURE.md](ARCHITECTURE.md) ·
 [TASKS.md](TASKS.md) · [DECISIONS.md](DECISIONS.md) · [docs/MONETIZATION.md](docs/MONETIZATION.md)
 
+## Telas
+
+**Dashboard**: projetos, tarefas, vídeos produzidos, erros, custo estimado e aprovações pendentes.
+![Dashboard](docs/screenshots/dashboard.png)
+
+**Niche Intelligence**: ranking explicável de nichos (0–100), com metodologia, pesos e limitações.
+![Niche Intelligence](docs/screenshots/nichos.png)
+![Metodologia e pesos](docs/screenshots/nichos_metodologia.png)
+
+**Trend Explorer**: assuntos mais acessados na Wikipedia por idioma, com atalho para criar um Short.
+![Trend Explorer](docs/screenshots/tendencias.png)
+
+**Vídeos**: biblioteca com prévia, status (pronto para postar / publicado) e resultados.
+![Vídeos](docs/screenshots/videos.png)
+
+**Agent Control**: agentes, contagem de tarefas, última atividade e custo.
+![Agent Control](docs/screenshots/agentes.png)
+
 ## Requisitos
 - Windows 10, Python 3.12, Node.js 20+ (testado com 24.21), Git.
 - FFmpeg **não** precisa estar instalado: o pacote `imageio-ffmpeg` traz o binário (ou defina `FFMPEG_PATH`).

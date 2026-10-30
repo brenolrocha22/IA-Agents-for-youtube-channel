@@ -5,19 +5,31 @@ chamadas humanas à API (`approve` / `reject`).
 """
 from __future__ import annotations
 
+import shutil
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
 from typing import Any
 
 from ..agents import AGENTS, TASK_ROUTES
 from ..agents.base import AgentContext
-from ..config import Policy, get_policy
-from ..models import (TERMINAL, ExecutionLimits, QualityReport, Script, Task, TaskResult, TaskStatus, Workflow, now)
+from ..config import Policy, get_policy, output_dir
+from ..models import (TERMINAL, ExecutionLimits, ProductionJob, QualityReport, Script, Task, TaskResult, TaskStatus,
+                      Workflow, now)
 from ..research.http import ApiBudget
 from ..store import Store, get_store
 
 APPROVAL_GATES = {"editorial_approval": "script_id", "final_approval": "job_id"}
+
+
+def _remove_tree(folder: Path) -> int:
+    """Remove uma pasta dentro de output/ e devolve os bytes liberados."""
+    if not folder.is_dir() or output_dir().resolve() not in folder.resolve().parents:
+        return 0
+    size = sum(f.stat().st_size for f in folder.rglob("*") if f.is_file())
+    shutil.rmtree(folder, ignore_errors=True)
+    return size
 
 
 class ApprovalBlocked(RuntimeError):
@@ -322,6 +334,7 @@ class Orchestrator:
                 self.store.put("scripts", script)
         self.store.log("warning", self.name, f"Rejeitado por {decided_by}. {note}".strip(), task.id)
         self._finish(task, TaskStatus.cancelled, result=TaskResult(ok=False, summary=f"Rejeitado: {note}"))
+        self.purge_unapproved_media()
         return task
 
     def cancel_workflow(self, wf_id: str) -> Workflow:
@@ -335,7 +348,46 @@ class Orchestrator:
                 t.status, t.completed_at = TaskStatus.cancelled, now()
                 self.store.put("tasks", t)
         self._refresh(wf_id)
+        self.purge_unapproved_media()
         return self.store.get("workflows", wf_id, Workflow)
+
+    def purge_unapproved_media(self) -> dict[str, int]:
+        """Apaga vídeo, pacote e filmagens de projetos reprovados ou cancelados sem aprovação final para
+        liberar disco. Projetos aprovados, em andamento ou com falha não são tocados."""
+        out = output_dir()
+        drop_jobs: set[str] = set()
+        drop_scripts: set[str] = set()
+        keep_scripts: set[str] = set()
+        for wf in self.store.list("workflows", Workflow):
+            tasks = self.tasks_of(wf)
+            outputs = [t.result.output for t in tasks if t.result and t.result.output]
+            scripts = {o["script_id"] for o in outputs if o.get("script_id")}
+            approved = any(t.type == "final_approval" and t.status == TaskStatus.completed for t in tasks)
+            # Falha não conta: pode ser repetida e precisa das filmagens já baixadas.
+            if wf.status == TaskStatus.cancelled and not approved:
+                drop_jobs |= {o["job_id"] for o in outputs if o.get("job_id")}
+                drop_scripts |= scripts
+            else:
+                keep_scripts |= scripts
+        # Filmagens só saem com o roteiro reprovado: vídeo reprovado costuma ser refeito com o mesmo roteiro.
+        drop_scripts = {sid for sid in drop_scripts - keep_scripts
+                        if (s := self.store.get("scripts", sid, Script)) and s.status == "rejected"}
+        freed = 0
+        removed = 0
+        for job in self.store.list("jobs", ProductionJob):
+            if job.status in ("queued", "running"):
+                continue  # render ainda pode estar escrevendo; limpa na próxima varredura
+            if job.id in drop_jobs or job.script_id in drop_scripts:
+                for folder in (out / "videos" / job.id, out / "publish" / job.id):
+                    freed += _remove_tree(folder)
+                self.store.delete("jobs", job.id)
+                removed += 1
+        for sid in drop_scripts:
+            freed += _remove_tree(out / "footage" / sid)
+        if removed or freed:
+            self.store.log("info", self.name, f"Limpeza: {removed} vídeo(s) não aprovado(s) removido(s), "
+                                              f"{freed / 1_048_576:.0f} MB liberados")
+        return {"jobs_removed": removed, "bytes_freed": freed}
 
     def retry_task(self, task_id: str) -> Task:
         """Reexecução manual de uma tarefa que falhou (as dependentes canceladas voltam a pendentes)."""
@@ -423,6 +475,10 @@ class Orchestrator:
         if self._runner and self._runner.is_alive():
             return
         self._recover()
+        try:
+            self.purge_unapproved_media()
+        except OSError as exc:
+            self.store.log("warning", self.name, f"Limpeza de mídia falhou: {exc}")
         self._stop.clear()
         self._pool = ThreadPoolExecutor(max_workers=self.policy.limits.max_concurrency, thread_name_prefix="agent")
         self._runner = threading.Thread(target=self._loop, daemon=True, name="orchestrator")

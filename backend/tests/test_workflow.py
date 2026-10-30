@@ -108,6 +108,20 @@ def test_reject_cancels_downstream(fake_wiki):
     assert get_store().list("scripts", Script)[0].status == "rejected"
 
 
+def test_rejected_video_is_deleted(fake_wiki):
+    orch = Orchestrator(store=get_store())
+    wf = _make(orch)
+    orch.run_until_idle()
+    orch.approve(_task(orch, wf, "editorial_approval").id)
+    orch.run_until_idle()
+    job = get_store().list("jobs", ProductionJob)[0]
+    folder = (ROOT / job.outputs["video"]).parent
+    assert folder.exists()
+    orch.reject(_task(orch, wf, "final_approval").id, note="ruim")
+    assert not folder.exists()
+    assert get_store().get("jobs", job.id, ProductionJob) is None
+
+
 def test_unknown_topic_fails_without_retry(monkeypatch):
     from app.research import wikimedia as wm
     monkeypatch.setattr(wm, "page_summary", lambda *a, **k: None)

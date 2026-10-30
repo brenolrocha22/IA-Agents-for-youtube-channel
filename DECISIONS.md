@@ -67,3 +67,11 @@ da YouTube Audio Library/Pixabay Music); ducking por sidechain e loudnorm -14 LU
 
 **D09 · 2026-10-29 · Publicação desativada.** Apenas pacote local. Upload exigirá OAuth oficial,
 escopo `youtube.upload` mínimo e aprovação humana registrada.
+
+**D15 · 2026-10-29 · Limpeza de reprovados.** Projeto encerrado sem aprovação final (reprovado, cancelado
+tem vídeo e pacote apagados de `output/`. Falhas não são limpas (podem ser repetidas). Filmagens só são apagadas
+quando o roteiro é reprovado, pois vídeo reprovado costuma ser refeito com o mesmo roteiro.
+
+**D16 · 2026-10-29 · Abertura GeoZoom.** Shorts de natureza/animais começam com zoom do espaço até o país ou
+região onde o tema ocorre (pedido do proprietário). O proprietário autorizou o GeoZoom (Node + Chrome local,
+imagens NASA de domínio público). Escala de cidade fica borrada: cortar o zoom na escala regional.

@@ -189,7 +189,7 @@ class WinRTTTS:
     timestamps = "do sintetizador (metadados de palavra do Windows)"
 
     def voice(self) -> str:
-        v = env("TTS_VOICE_PT_WINRT", "Microsoft Daniel")
+        v = env("TTS_VOICE_PT_WINRT", "Microsoft Maria")  # feminina por padrão (pedido do proprietário)
         if not _VOICE_RE.match(v):
             raise ValueError("Nome de voz inválido")
         return v
@@ -199,8 +199,8 @@ class WinRTTTS:
 
     def synthesize_many(self, items: list[tuple[str, Path]], lang: str, rate: int = 0) -> list[list[dict]]:
         q = lambda p: "'" + str(p).replace("'", "''") + "'"  # noqa: E731
-        pitch = env("TTS_PITCH", "-12%")
-        speed = env("TTS_RATE", {0: "-3%", 1: "+4%"}.get(rate, "+12%") if rate >= 0 else "-3%")
+        pitch = env("TTS_PITCH", "-12%" if "Daniel" in self.voice() else "+0%")
+        speed = env("TTS_RATE", {0: "-5%", 1: "-2%"}.get(rate, "+8%") if rate >= 0 else "-5%")  # fala mais mansa
         if not re.fullmatch(r"[+-]?\d{1,2}%", pitch) or not re.fullmatch(r"[+-]?\d{1,2}%", speed):
             raise ValueError("TTS_PITCH/TTS_RATE inválidos (ex.: -12%)")
         lines = [
@@ -257,9 +257,53 @@ class WinRTTTS:
         return result
 
 
+class SpeechifyTTS:
+    """Speechify (API oficial, paga). Desativado sem SPEECHIFY_API_KEY e SPEECHIFY_VOICE_ID.
+
+    O ID da voz é escolhido pelo proprietário na conta Speechify (ex.: voz feminina carioca). A API devolve o áudio e
+    as marcas de tempo por palavra. Não usa o gerador do site (automatizá-lo violaria os termos).
+    """
+
+    name = "speechify"
+    license = "Voz Speechify via API — uso comercial conforme o plano contratado (verificar termos)"
+    timestamps = "do provedor (speech marks da API Speechify)"
+    API = "https://api.sws.speechify.com/v1/audio/speech"
+
+    def is_available(self) -> bool:
+        return bool(env("SPEECHIFY_API_KEY") and env("SPEECHIFY_VOICE_ID"))
+
+    def synthesize_many(self, items: list[tuple[str, Path]], lang: str, rate: int = 0) -> list[list[dict]]:
+        import httpx
+
+        from . import ffmpeg
+
+        result = []
+        for text, out in items:
+            r = httpx.post(self.API, timeout=120, headers={"Authorization": f"Bearer {env('SPEECHIFY_API_KEY')}"},
+                           json={"input": text, "voice_id": env("SPEECHIFY_VOICE_ID"), "audio_format": "wav",
+                                 "language": "pt-BR", "model": env("SPEECHIFY_MODEL", "simba-multilingual")})
+            if r.status_code >= 400:  # nunca inclui a chave na mensagem
+                raise RuntimeError(f"Speechify respondeu {r.status_code}: {r.text[:300]}")
+            data = r.json()
+            raw = out.with_suffix(".raw.wav")
+            raw.write_bytes(base64.b64decode(data["audio_data"]))
+            ffmpeg.run(["-y", "-i", str(raw), "-ac", "1", "-ar", str(SAMPLE_RATE), "-sample_fmt", "s16", str(out)], 120)
+            raw.unlink(missing_ok=True)
+            marks = (data.get("speech_marks") or {}).get("chunks") or []
+            words = [{"t": float(m.get("start_time", 0)) / 1000, "word": str(m.get("value", "")).strip()} for m in marks
+                     if str(m.get("value", "")).strip()]
+            if not words:  # sem marcas: estima pela energia do áudio (aviso no log do job)
+                start, end = speech_span(out)
+                toks = text.split()
+                words = [{"t": start + (end - start) * i / max(1, len(toks)), "word": w} for i, w in enumerate(toks)]
+            result.append(calibrate(words, out, scale=1.0))
+        return result
+
+
 def get_tts():
-    wanted = env("TTS_PROVIDER", "winrt")
-    for provider in (WinRTTTS(), SapiTTS()):
+    # Speechify entra automaticamente quando configurado; senão a voz do Windows.
+    wanted = env("TTS_PROVIDER", "speechify" if SpeechifyTTS().is_available() else "winrt")
+    for provider in (SpeechifyTTS(), WinRTTTS(), SapiTTS()):
         if wanted == provider.name and provider.is_available():
             return provider
     return SilentTTS()

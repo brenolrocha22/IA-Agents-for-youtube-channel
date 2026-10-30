@@ -15,10 +15,10 @@ node_modules/
 frontend/dist/
 
 # Dados locais e saídas geradas
-data/
-output/
-!data/.gitkeep
-!output/.gitkeep
+/data/
+/output/
+!/data/.gitkeep
+!/output/.gitkeep
 
 # Editor / SO
 .vscode/*
@@ -28,3 +28,9 @@ Thumbs.db
 
 # Cópias geradas da identidade visual
 imagens/
+
+# GeoZoom: dependências e dados gerados (recriar com tools/prepare_assets.py)
+geozoom/node_modules/
+geozoom/data/source/
+geozoom/data/tiles/
+geozoom/data/stars/

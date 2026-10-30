@@ -76,6 +76,8 @@ ENV_VARS: dict[str, dict[str, Any]] = {
     "OPENAI_MODEL": {"secret": False, "used_by": "Modelo do ChatGPT (nome exato da sua conta)"},
     "FFMPEG_PATH": {"secret": False, "used_by": "Renderização"},
     "TTS_PROVIDER": {"secret": False, "used_by": "Narração"},
+    "SPEECHIFY_API_KEY": {"secret": True, "used_by": "Narração Speechify (voz escolhida pelo proprietário)"},
+    "SPEECHIFY_VOICE_ID": {"secret": False, "used_by": "ID da voz Speechify"},
     "TTS_VOICE_PT": {"secret": False, "used_by": "Narração pt-BR"},
     "TTS_VOICE_EN": {"secret": False, "used_by": "Narração en"},
     "YOUTUBE_OAUTH_CLIENT_ID": {"secret": True, "used_by": "Publicação (desativada)"},

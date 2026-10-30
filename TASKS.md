@@ -60,6 +60,12 @@ Formato: Objetivo · Arquivos · Dependências · Aceitação · Testes · Inter
   telas pretas. Short do polvo: 6/7 cenas com filmagem real validada; **cena 6 (tinta) pendente** —
   sem filmagem licenciada no Commons. Desbloqueio: PEXELS_API_KEY/PIXABAY_API_KEY ou aprovar adaptação.
 - [x] **T25 Pasta `imagens/`** (D14): cópia automática da identidade de cada canal.
+- [x] **T26 Limpeza de vídeos não aprovados** (D15): reprovar/cancelar apaga `output/videos|publish/<job>`,
+  `output/footage/<script>` e o registro do job; a varredura também roda ao iniciar o servidor.
+- [~] **T27 Abertura GeoZoom nos Shorts** (D16): `VisualPlan.intro_clip` substitui o visual da cena 1
+  (clipe ajustado à duração do gancho). Austrália: zoom até Sydney (cortado em 4,3s, antes de borrar);
+  render 58,6s aguardando aprovação final. Falta: gerar o GeoZoom automaticamente no pipeline (hoje manual).
+- [x] **T28 Legenda duplicada com números**: marca de voz "5 animais" + "animais" → dedupe em `caption_chunks`.
 
 ## Próxima tarefa recomendada
 - [ ] **T16 Provedor LLM (modo híbrido)** para reescrever fatos com originalidade e humor real, com teto

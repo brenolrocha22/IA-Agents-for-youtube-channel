@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<title>GeoZoom</title>
+<link rel="stylesheet" href="/cesium/Widgets/widgets.css" />
+<style>
+  html, body, #globe { margin: 0; padding: 0; width: 1080px; height: 1920px; overflow: hidden; background: #000; }
+  #credits { display: none; }
+</style>
+<script src="/cesium/Cesium.js"></script>
+</head>
+<body>
+<div id="globe"></div>
+<div id="credits"></div>
+<script>
+  // GeoZoom: renderização determinística. Nada do Cesium ion é usado (sem token, sem custo).
+  window.CESIUM_BASE_URL = "/cesium/";
+  const C = window.Cesium;
+  let viewer;
+
+  async function init(opts) {
+    C.Ion.defaultAccessToken = undefined;
+    const imagery = new C.UrlTemplateImageryProvider({
+      url: "/data/tiles/{z}/{x}/{y}.jpg",
+      tilingScheme: new C.GeographicTilingScheme(),
+      tileWidth: 512, tileHeight: 512, maximumLevel: opts.maxLevel,
+      credit: new C.Credit("NASA Blue Marble (domínio público)"),
+    });
+    viewer = new C.Viewer("globe", {
+      baseLayer: new C.ImageryLayer(imagery),
+      terrainProvider: new C.EllipsoidTerrainProvider(),
+      animation: false, timeline: false, baseLayerPicker: false, geocoder: false, homeButton: false,
+      sceneModePicker: false, navigationHelpButton: false, fullscreenButton: false, infoBox: false,
+      selectionIndicator: false, creditContainer: "credits", useDefaultRenderLoop: false,
+      contextOptions: { webgl: { preserveDrawingBuffer: true, alpha: false } },
+      skyBox: new C.SkyBox({ sources: {
+        positiveX: "/data/stars/px.jpg", negativeX: "/data/stars/nx.jpg", positiveY: "/data/stars/py.jpg",
+        negativeY: "/data/stars/ny.jpg", positiveZ: "/data/stars/pz.jpg", negativeZ: "/data/stars/nz.jpg" } }),
+    });
+    const scene = viewer.scene;
+    scene.globe.enableLighting = false;
+    scene.globe.showGroundAtmosphere = true;
+    scene.skyAtmosphere.show = true;
+    scene.fog.enabled = false;
+    scene.globe.maximumScreenSpaceError = 1.5; // mais nitidez nos tiles
+    scene.sun.show = false;
+    scene.moon.show = false;
+    viewer.resolutionScale = 1.0;
+    return { ok: true, cesium: C.VERSION, fov: scene.camera.frustum.fov };
+  }
+
+  /** Altura em que a caixa do destino cabe no quadro vertical (cálculo do próprio Cesium) com margem. */
+  function fitHeight(bbox, margin) {
+    const rect = C.Rectangle.fromDegrees(bbox[0], bbox[1], bbox[2], bbox[3]);
+    const pos = viewer.camera.getRectangleCameraCoordinates(rect);
+    return C.Cartographic.fromCartesian(pos).height * margin;
+  }
+
+  const nextFrame = () => new Promise((r) => requestAnimationFrame(() => r()));
+
+  /** Posiciona a câmera (olhando para baixo, norte para cima) e renderiza até todos os tiles carregarem. */
+  async function renderAt(state, maxPasses) {
+    viewer.camera.setView({
+      destination: C.Cartesian3.fromDegrees(state.lon, state.lat, state.height),
+      orientation: { heading: 0, pitch: -C.Math.PI_OVER_TWO, roll: 0 },
+    });
+    let passes = 0;
+    do {
+      viewer.scene.render();
+      await nextFrame();
+      passes++;
+    } while ((!viewer.scene.globe.tilesLoaded || passes < 2) && passes < maxPasses);
+    viewer.scene.render();
+    return { tilesLoaded: viewer.scene.globe.tilesLoaded, passes };
+  }
+
+  /** Validação geográfica do quadro atual: o que está no centro e se a caixa inteira aparece. */
+  function checkGeo(bbox) {
+    const canvas = viewer.scene.canvas;
+    const w = canvas.clientWidth, h = canvas.clientHeight;
+    const pick = (x, y) => {
+      const p = viewer.camera.pickEllipsoid(new C.Cartesian2(x, y));
+      if (!p) return null;
+      const c = C.Cartographic.fromCartesian(p);
+      return { lon: C.Math.toDegrees(c.longitude), lat: C.Math.toDegrees(c.latitude) };
+    };
+    const corners = [[bbox[0], bbox[1]], [bbox[0], bbox[3]], [bbox[2], bbox[1]], [bbox[2], bbox[3]]].map(([lon, lat]) => {
+      const s = C.SceneTransforms.worldToWindowCoordinates(viewer.scene, C.Cartesian3.fromDegrees(lon, lat));
+      return s ? { x: s.x, y: s.y, inside: s.x >= 0 && s.x <= w && s.y >= 0 && s.y <= h } : { inside: false };
+    });
+    const credits = [];
+    viewer.scene.frameState.creditDisplay?._currentFrameCredits?.lightboxCredits?.values?.forEach?.((c) => credits.push(c.credit.html));
+    return { center: pick(w / 2, h / 2), corners, width: w, height: h, credits };
+  }
+
+  window.geozoom = { init, fitHeight, renderAt, checkGeo };
+</script>
+</body>
+</html>

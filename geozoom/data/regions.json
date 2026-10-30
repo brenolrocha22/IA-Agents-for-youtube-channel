@@ -1,0 +1,109 @@
+{
+  "_doc": "Regiões personalizadas (não são países). bbox = [oeste, sul, leste, norte] em graus. Edite/adicione à vontade.",
+  "regions": [
+    {
+      "name": "Amazônia",
+      "aliases": [
+        "amazonia",
+        "amazon",
+        "floresta amazonica"
+      ],
+      "bbox": [
+        -79.5,
+        -17.5,
+        -44.0,
+        5.5
+      ]
+    },
+    {
+      "name": "Patagônia",
+      "aliases": [
+        "patagonia"
+      ],
+      "bbox": [
+        -75.5,
+        -55.5,
+        -63.0,
+        -37.5
+      ]
+    },
+    {
+      "name": "Grande Barreira de Corais",
+      "aliases": [
+        "great barrier reef",
+        "grande barreira"
+      ],
+      "bbox": [
+        142.5,
+        -24.5,
+        154.0,
+        -10.5
+      ]
+    },
+    {
+      "name": "Saara",
+      "aliases": [
+        "sahara",
+        "deserto do saara"
+      ],
+      "bbox": [
+        -17.0,
+        15.0,
+        39.0,
+        33.0
+      ]
+    },
+    {
+      "name": "Ártico",
+      "aliases": [
+        "artico",
+        "arctic",
+        "polo norte"
+      ],
+      "bbox": [
+        -180.0,
+        66.5,
+        180.0,
+        90.0
+      ]
+    },
+    {
+      "name": "Galápagos",
+      "aliases": [
+        "galapagos",
+        "ilhas galapagos"
+      ],
+      "bbox": [
+        -92.2,
+        -1.5,
+        -89.0,
+        0.8
+      ]
+    },
+    {
+      "name": "Pantanal",
+      "aliases": [
+        "pantanal"
+      ],
+      "bbox": [
+        -59.0,
+        -22.5,
+        -54.5,
+        -15.5
+      ]
+    },
+    {
+      "name": "Sydney",
+      "aliases": [
+        "sidney",
+        "sydney australia"
+      ],
+      "bbox": [
+        149.8,
+        -34.8,
+        152.2,
+        -32.9
+      ]
+    }
+  ]
+}

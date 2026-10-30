@@ -296,6 +296,8 @@ class VisualPlan(BaseModel):
     providers: list[str]
     scenes: list[VisualScene]
     log: list[str] = Field(default_factory=list)
+    # Abertura GeoZoom (espaço → local do tema), relativa à raiz do projeto; substitui o visual da cena 1.
+    intro_clip: str | None = None
 
     def coverage(self) -> float:
         """Proporção do tempo narrado (ou das cenas, antes da narração) coberta por material validado."""

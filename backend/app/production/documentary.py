@@ -22,7 +22,7 @@ from .tts import concat_wavs, get_tts, wav_duration
 
 W, H = 1080, 1920
 FPS = 30
-GAP_S = 0.3
+GAP_S = 0.12  # pausa curta entre falas: transição mais fluida (pedido do proprietário)
 OUTRO_S = 1.6
 VOICE_RATE = 1  # SAPI: 0 = normal; +1 ≈ 10% mais rápido (leve, sem distorcer a voz)
 FG_H = 1500  # filmagem ocupa ~78% da altura (o animal precisa aparecer grande); fundo desfocado só nas bordas
@@ -36,7 +36,11 @@ def rel(p: Path) -> str:
 def caption_chunks(words: list[dict], offset: float, end: float, max_words: int = 3, max_chars: int = 22) -> list[dict]:
     """Agrupa palavras com tempo real; cada legenda vai até o início da seguinte."""
     chunks, cur = [], []
-    for w in words:
+    for i, w in enumerate(words):
+        # Números ("5") às vezes vêm do sintetizador junto com a palavra seguinte, que depois vem de novo.
+        toks = w["word"].split()
+        if len(toks) > 1 and i + 1 < len(words) and words[i + 1]["word"].split()[:1] == toks[1:2]:
+            w = {**w, "word": toks[0]}
         text = " ".join(x["word"] for x in cur + [w])
         if cur and (len(cur) >= max_words or len(text) > max_chars):
             chunks.append(cur)
@@ -185,6 +189,14 @@ def scene_clip(src: Path, out: Path, start: float, need: float, src_dur: float, 
     return note
 
 
+def fit_clip(src: Path, out: Path, need: float, timeout_s: int) -> None:
+    """Acelera/desacelera o clipe inteiro para caber em `need` (o zoom precisa chegar ao destino)."""
+    factor = need / max(0.1, ffmpeg.probe(src).get("duration", need))
+    ffmpeg.run(["-y", "-i", str(src), "-vf", f"setpts={factor:.4f}*(PTS-STARTPTS),scale={W}:{H},fps={FPS},format=yuv420p,"
+                f"setsar=1,trim=duration={need:.3f}", "-an", "-c:v", "libx264", "-preset", "veryfast", "-crf", "18",
+                "-r", str(FPS), str(out)], timeout_s)
+
+
 def still_clip(img: Path, out: Path, need: float, timeout_s: int) -> None:
     ffmpeg.run(["-y", "-loop", "1", "-t", f"{need:.3f}", "-i", str(img), "-vf", f"scale={W}:{H},format=yuv420p,fps={FPS}",
                 "-c:v", "libx264", "-preset", "veryfast", "-crf", "20", str(out)], timeout_s)
@@ -244,7 +256,11 @@ def produce_documentary(job: ProductionJob, script: Script, plan: VisualPlan, up
         by_id = {c.id: c for c in sc.candidates}
         cand = by_id.get(sc.selected_id or "")
         stage("footage", 0.2 + 0.4 * sc.index / len(plan.scenes), f"Cena {sc.index + 1}: {cand.title[:50] if cand else 'PENDENTE'}")
-        if cand and cand.local_path and sc.validation in ("validada", "revisao"):
+        if sc.index == 0 and plan.intro_clip and (ROOT / plan.intro_clip).exists():
+            out = tmp / "scene_00_geozoom.mp4"
+            fit_clip(ROOT / plan.intro_clip, out, need, limits.max_render_seconds)
+            pieces.append(out)
+        elif cand and cand.local_path and sc.validation in ("validada", "revisao"):
             # Tomada principal + tomadas extras validadas = cortes dinâmicos dentro da cena.
             shots = [{"id": cand.id, "start": sc.clip_start}] + [s for s in sc.shots if by_id.get(s["id"]) and by_id[s["id"]].local_path]
             shots = shots[: max(1, int(need // MIN_SHOT_S))]
@@ -341,6 +357,10 @@ def produce_documentary(job: ProductionJob, script: Script, plan: VisualPlan, up
            "status": "ok" if c.license_status == "aceita" else "verify", "credit": c.credit,
            "attribution_required": str(c.attribution_required)} for c in used.values()],
     ]
+    if plan.intro_clip:
+        job.rights_manifest.append({"asset": "abertura GeoZoom (Terra vista do espaço)",
+                                    "source": "NASA Blue Marble + Natural Earth, renderizado localmente (CesiumJS)",
+                                    "license": "Domínio público (NASA, Natural Earth); CesiumJS Apache-2.0", "status": "ok"})
     stage("rendered", 1.0, f"Vídeo pronto: {rel(video)} (cobertura visual validada: {plan.coverage():.0%})")
     job.status = "rendered"
     return job
